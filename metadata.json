@@ -1,0 +1,8 @@
+{
+  "name": "ULEF.IN - Premium Oversized Tees",
+  "description": "Luxury minimalist oversized t-shirt brand featuring modern collections, interactive lookbooks, cart & checkout, customer reviews, order tracking, and admin inventory management.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
