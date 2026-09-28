@@ -71,12 +71,12 @@ const AppContent: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-white dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 selection:bg-neutral-900 selection:text-white dark:selection:bg-white dark:selection:text-neutral-900 transition-colors duration-200">
+    <div className="min-h-screen flex flex-col w-full max-w-[100vw] overflow-x-hidden bg-white dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 selection:bg-neutral-900 selection:text-white dark:selection:bg-white dark:selection:text-neutral-900 transition-colors duration-200">
       {/* Universal Header */}
       <Header />
 
       {/* Main Dynamic View with Smooth Fade/Slide Animation */}
-      <main className="flex-1 w-full">
+      <main className="flex-1 w-full max-w-full overflow-x-hidden">
         <AnimatePresence mode="wait">
           <motion.div
             key={activeView}
@@ -84,7 +84,7 @@ const AppContent: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.25, ease: 'easeOut' }}
-            className="w-full"
+            className="w-full max-w-full overflow-x-hidden"
           >
             {renderCurrentView()}
           </motion.div>

@@ -39,7 +39,7 @@ export const HomeView: React.FC = () => {
   };
 
   return (
-    <div className="w-full space-y-16 sm:space-y-24 pb-20">
+    <div className="w-full max-w-[100vw] overflow-x-hidden space-y-16 sm:space-y-24 pb-20">
       {/* 1. Hero Section */}
       <HeroBanner />
 

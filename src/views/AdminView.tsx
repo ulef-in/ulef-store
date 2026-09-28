@@ -673,20 +673,6 @@ export const AdminView: React.FC = () => {
             </button>
           </form>
 
-          {/* Helper hint for store owner */}
-          <div className="p-3.5 rounded-xl bg-neutral-100 dark:bg-neutral-800/60 border border-neutral-200 dark:border-neutral-700/60 text-[11px] font-mono text-neutral-600 dark:text-neutral-400 space-y-1 text-left">
-            <div className="flex items-center gap-1.5 font-bold text-neutral-800 dark:text-neutral-200">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-              <span>Owner Default Credentials:</span>
-            </div>
-            <p>
-              Default Master Password: <span className="font-bold text-amber-500 select-all">admin123</span> (ya mobile nambar <span className="font-bold text-amber-500 select-all">9316614778</span>).
-            </p>
-            <p className="text-[10px] text-neutral-400">
-              Unlock karne ke baad aap "Change Password" button par click karke koi bhi naya password rakh sakte hain.
-            </p>
-          </div>
-
           <div className="pt-2 border-t border-neutral-100 dark:border-neutral-800">
             <button
               onClick={() => setActiveView('shop')}

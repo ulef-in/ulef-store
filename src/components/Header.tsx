@@ -59,9 +59,9 @@ export const Header: React.FC = () => {
   };
 
   return (
-    <header className="sticky top-0 z-40 w-full transition-colors duration-300">
+    <header className="sticky top-0 z-50 w-full max-w-[100vw] overflow-x-hidden transition-colors duration-300">
       {/* Top Luxury Announcement Ticker */}
-      <div className="bg-neutral-950 text-neutral-300 dark:bg-black dark:text-neutral-300 text-[11px] font-mono uppercase tracking-widest py-1.5 px-4 border-b border-neutral-800/80 overflow-hidden relative">
+      <div className="bg-neutral-950 text-neutral-300 dark:bg-black dark:text-neutral-300 text-[11px] font-mono uppercase tracking-widest py-1.5 px-4 border-b border-neutral-800/80 overflow-hidden relative w-full">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
           <div className="hidden sm:flex items-center gap-2 text-neutral-400">
             <Sparkles className="w-3.5 h-3.5 text-amber-400" />
@@ -100,29 +100,29 @@ export const Header: React.FC = () => {
       </div>
 
       {/* Main Navigation Bar */}
-      <div className="bg-white/90 dark:bg-neutral-950/90 glass-nav border-b border-neutral-200 dark:border-neutral-800/80 transition-colors">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 sm:h-20 flex items-center justify-between">
+      <div className="bg-white/90 dark:bg-neutral-950/90 glass-nav border-b border-neutral-200 dark:border-neutral-800/80 transition-colors w-full">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between">
           {/* Left Menu / Mobile Hamburger */}
-          <div className="flex items-center gap-4 lg:gap-8">
+          <div className="flex items-center gap-2 sm:gap-4 lg:gap-8 shrink-0">
             <button
               onClick={() => setIsMobileMenuOpen(true)}
-              className="lg:hidden p-2 -ml-2 text-neutral-700 dark:text-neutral-300 hover:text-neutral-950 dark:hover:text-white"
+              className="lg:hidden p-1.5 -ml-1 text-neutral-700 dark:text-neutral-300 hover:text-neutral-950 dark:hover:text-white"
               aria-label="Open mobile menu"
             >
-              <Menu className="w-6 h-6" />
+              <Menu className="w-5 h-5 sm:w-6 sm:h-6" />
             </button>
 
             {/* Brand Logo */}
             <div
               onClick={() => handleNavClick('home')}
-              className="cursor-pointer flex flex-col items-start group"
+              className="cursor-pointer flex flex-col items-start group select-none shrink-0"
             >
               <div className="flex items-baseline gap-1">
-                <span className="text-2xl sm:text-3xl font-extrabold font-display tracking-tighter text-neutral-950 dark:text-white group-hover:opacity-80 transition-opacity">
+                <span className="text-xl sm:text-2xl lg:text-3xl font-extrabold font-display tracking-tight sm:tracking-tighter text-neutral-950 dark:text-white group-hover:opacity-80 transition-opacity">
                   ULEF<span className="text-neutral-400 dark:text-neutral-500">.IN</span>
                 </span>
               </div>
-              <span className="text-[9px] font-mono tracking-[0.25em] uppercase text-neutral-500 dark:text-neutral-400 -mt-1 font-semibold">
+              <span className="text-[8px] sm:text-[9px] font-mono tracking-[0.2em] sm:tracking-[0.25em] uppercase text-neutral-500 dark:text-neutral-400 -mt-1 font-semibold">
                 HEAVYWEIGHT ATELIER
               </span>
             </div>
@@ -155,14 +155,14 @@ export const Header: React.FC = () => {
           </div>
 
           {/* Right Action Icons */}
-          <div className="flex items-center gap-2 sm:gap-3 text-neutral-700 dark:text-neutral-300">
+          <div className="flex items-center gap-1 sm:gap-2 text-neutral-700 dark:text-neutral-300 shrink-0">
             {/* Search Trigger */}
             <button
               onClick={() => setIsSearchOpen(true)}
-              className="p-2 sm:px-3 sm:py-2 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors flex items-center gap-2 text-xs font-medium"
+              className="p-1.5 sm:px-3 sm:py-2 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors flex items-center gap-2 text-xs font-medium"
               aria-label="Search catalog"
             >
-              <Search className="w-5 h-5" />
+              <Search className="w-4 h-4 sm:w-5 sm:h-5" />
               <span className="hidden xl:inline text-neutral-400 font-mono text-[11px]">Search (240 GSM...)</span>
             </button>
 
@@ -207,25 +207,26 @@ export const Header: React.FC = () => {
             {/* Theme Toggle (Dark / Light) */}
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+              className="p-1.5 sm:p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
               aria-label="Toggle theme"
+              title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} mode`}
             >
               {theme === 'dark' ? (
-                <Sun className="w-5 h-5 text-amber-300 hover:rotate-45 transition-transform duration-300" />
+                <Sun className="w-4 h-4 sm:w-5 sm:h-5 text-amber-300 hover:rotate-45 transition-transform duration-300" />
               ) : (
-                <Moon className="w-5 h-5 text-neutral-800 hover:-rotate-12 transition-transform duration-300" />
+                <Moon className="w-4 h-4 sm:w-5 sm:h-5 text-neutral-800 dark:text-neutral-200 hover:-rotate-12 transition-transform duration-300" />
               )}
             </button>
 
             {/* Wishlist Icon */}
             <button
               onClick={() => setActiveView('wishlist')}
-              className="relative p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+              className="relative p-1.5 sm:p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
               aria-label="Wishlist"
             >
-              <Heart className={`w-5 h-5 ${wishlist.length > 0 ? 'text-red-500 fill-red-500' : ''}`} />
+              <Heart className={`w-4 h-4 sm:w-5 sm:h-5 ${wishlist.length > 0 ? 'text-red-500 fill-red-500' : ''}`} />
               {wishlist.length > 0 && (
-                <span className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-red-500 text-white text-[10px] font-bold font-mono flex items-center justify-center">
+                <span className="absolute top-0 right-0 w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-red-500 text-white text-[9px] sm:text-[10px] font-bold font-mono flex items-center justify-center">
                   {wishlist.length}
                 </span>
               )}
@@ -234,22 +235,22 @@ export const Header: React.FC = () => {
             {/* User Account / Profile */}
             <button
               onClick={() => setIsAuthOpen(true)}
-              className="relative p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors flex items-center gap-1.5"
+              className="relative p-1.5 sm:p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors flex items-center gap-1.5"
               aria-label="User Account"
             >
               {currentUser ? (
-                <div className="w-7 h-7 rounded-full bg-neutral-900 text-white dark:bg-white dark:text-neutral-950 font-display font-bold text-xs flex items-center justify-center ring-2 ring-neutral-200 dark:ring-neutral-800">
+                <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-neutral-900 text-white dark:bg-white dark:text-neutral-950 font-display font-bold text-xs flex items-center justify-center ring-1 sm:ring-2 ring-neutral-200 dark:ring-neutral-800">
                   {currentUser.name.charAt(0).toUpperCase()}
                 </div>
               ) : (
-                <User className="w-5 h-5" />
+                <User className="w-4 h-4 sm:w-5 sm:h-5" />
               )}
             </button>
 
-            {/* Shopping Cart Drawer Trigger */}
+            {/* Shopping Cart Drawer Trigger (Always fully visible on right edge with bag & count) */}
             <button
               onClick={() => setIsCartOpen(true)}
-              className="relative p-2.5 sm:px-4 sm:py-2 rounded-full bg-neutral-900 text-white dark:bg-white dark:text-neutral-950 hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-all flex items-center gap-2 shadow-sm"
+              className="relative ml-0.5 sm:ml-1 px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-full bg-neutral-900 text-white dark:bg-white dark:text-neutral-950 hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-all flex items-center gap-1.5 sm:gap-2 shadow-sm shrink-0 cursor-pointer active:scale-95"
               aria-label="Shopping Cart"
             >
               <ShoppingBag className="w-4 h-4" />
@@ -267,7 +268,7 @@ export const Header: React.FC = () => {
       {/* Mobile Drawer Menu */}
       <AnimatePresence>
         {isMobileMenuOpen && (
-          <div className="fixed inset-0 z-50 lg:hidden">
+          <div className="fixed inset-0 z-[60] lg:hidden">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
