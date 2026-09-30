@@ -1,6 +1,13 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Product, CartItem, Order, User, Currency, Size, ProductColor, Review, CustomerContact, CodSettings } from '../types';
 import { INITIAL_PRODUCTS, INITIAL_ORDERS } from '../data/initialProducts';
+import {
+  fetchSupabaseProducts,
+  createSupabaseProduct,
+  updateSupabaseProduct,
+  deleteSupabaseProduct,
+  subscribeToProductChanges
+} from '../lib/supabase';
 
 interface Toast {
   id: string;
@@ -94,6 +101,12 @@ interface StoreContextType {
   codSettings: CodSettings;
   setCodSettings: (settings: Partial<CodSettings>) => void;
   
+  // Storefront Hero Poster
+  heroBannerImage: string;
+  setHeroBannerImage: (image: string) => void;
+  heroBannerOpacity: number;
+  setHeroBannerOpacity: (opacity: number) => void;
+  
   // Customer WhatsApp Broadcast & VIP Club
   customerContacts: CustomerContact[];
   broadcastWebhookUrl: string;
@@ -101,9 +114,11 @@ interface StoreContextType {
   addVipSubscriber: (name: string, phone: string, city?: string) => void;
   
   // Admin & Products
-  addProduct: (newProduct: Omit<Product, 'id' | 'slug' | 'createdAt' | 'reviews' | 'rating' | 'reviewsCount'>) => void;
-  updateProduct: (id: string, updated: Partial<Product>) => void;
-  deleteProduct: (id: string) => void;
+  addProduct: (newProduct: Omit<Product, 'id' | 'slug' | 'createdAt' | 'reviews' | 'rating' | 'reviewsCount'>) => Promise<void> | void;
+  updateProduct: (idOrProduct: string | Product, updated?: Partial<Product>) => Promise<void> | void;
+  deleteProduct: (id: string) => Promise<void> | void;
+  reloadProductsFromSupabase: () => Promise<void>;
+  isProductsLoading: boolean;
   addReview: (productId: string, review: Omit<Review, 'id' | 'date'>) => void;
   deleteReview: (productId: string, reviewId: string) => void;
   replyToReview: (productId: string, reviewId: string, reply: string) => void;
@@ -128,10 +143,10 @@ interface StoreContextType {
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
 
 const CURRENCY_RATES: Record<Currency, { symbol: string; rate: number; format: string }> = {
+  INR: { symbol: '₹', rate: 86.5, format: '₹' },
   USD: { symbol: '$', rate: 1, format: '$' },
   EUR: { symbol: '€', rate: 0.92, format: '€' },
   GBP: { symbol: '£', rate: 0.79, format: '£' },
-  INR: { symbol: '₹', rate: 86.5, format: '₹' },
 };
 
 export const sanitizeProduct = (p: any): Product => {
@@ -331,7 +346,53 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false);
   const [isSupportChatOpen, setIsSupportChatOpen] = useState(false);
-  const [currency, setCurrency] = useState<Currency>('USD');
+  const [currency, setCurrency] = useState<Currency>(() => {
+    const saved = localStorage.getItem('ulef_currency_v2');
+    if (saved === 'INR' || saved === 'USD' || saved === 'EUR' || saved === 'GBP') {
+      return saved as Currency;
+    }
+    return 'INR'; // Default to INR (₹) across the entire store
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('ulef_currency_v2', currency);
+    } catch {}
+  }, [currency]);
+
+  const [isProductsLoading, setIsProductsLoading] = useState(false);
+
+  // Live Supabase Products Sync & Realtime Subscription
+  const reloadProductsFromSupabase = async () => {
+    setIsProductsLoading(true);
+    try {
+      const live = await fetchSupabaseProducts();
+      if (live && live.length > 0) {
+        setProducts(live.map(sanitizeProduct));
+        try {
+          localStorage.setItem('ulef_products', JSON.stringify(live));
+        } catch {}
+      }
+    } catch (err) {
+      console.warn('Live Supabase product sync warning:', err);
+    } finally {
+      setIsProductsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    reloadProductsFromSupabase();
+
+    // Subscribe to realtime postgres_changes from Supabase
+    const unsubscribe = subscribeToProductChanges(() => {
+      reloadProductsFromSupabase();
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, []);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discountPercent: number } | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -686,6 +747,28 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     showToast('COD Settings Saved', 'Cash on Delivery preferences updated successfully', 'success');
   };
 
+  // Storefront Hero Poster State
+  const [heroBannerImage, setHeroBannerImageState] = useState<string>(() => {
+    return localStorage.getItem('ulef_hero_banner_image') || 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=2000&q=90';
+  });
+
+  const [heroBannerOpacity, setHeroBannerOpacityState] = useState<number>(() => {
+    const saved = localStorage.getItem('ulef_hero_banner_opacity');
+    return saved ? Number(saved) : 40;
+  });
+
+  const setHeroBannerImage = (url: string) => {
+    const clean = url.trim();
+    localStorage.setItem('ulef_hero_banner_image', clean);
+    setHeroBannerImageState(clean);
+    showToast('Background Poster Updated', 'New homepage hero banner poster is now live!', 'success');
+  };
+
+  const setHeroBannerOpacity = (opacity: number) => {
+    localStorage.setItem('ulef_hero_banner_opacity', opacity.toString());
+    setHeroBannerOpacityState(opacity);
+  };
+
   // VIP Drop Alert Subscribers
   const [vipSubscribers, setVipSubscribers] = useState<CustomerContact[]>(() => {
     const saved = localStorage.getItem('ulef_vip_subscribers');
@@ -805,70 +888,83 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
 
   // Admin Product Management
-  const addProduct = (newProductData: Omit<Product, 'id' | 'slug' | 'createdAt' | 'reviews' | 'rating' | 'reviewsCount'>) => {
-    const id = `ulef-${Date.now().toString().slice(-4)}`;
-    const nameStr = (newProductData.name || 'Signature Luxury Silhouette').trim();
-    const slug = nameStr.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-    const newProduct: Product = sanitizeProduct({
-      ...newProductData,
-      id,
-      slug,
-      rating: 5.0,
-      reviewsCount: 0,
-      reviews: [],
-      createdAt: new Date().toISOString()
-    });
+  const addProduct = async (newProductData: Omit<Product, 'id' | 'slug' | 'createdAt' | 'reviews' | 'rating' | 'reviewsCount'>) => {
+    showToast('Saving to Supabase', `Syncing "${newProductData.name}" with live database...`, 'info');
+    
+    // Execute directly in Supabase
+    const res = await createSupabaseProduct(newProductData);
+    let createdProduct: Product;
+    
+    if (res.success && res.product) {
+      createdProduct = sanitizeProduct(res.product);
+    } else {
+      const id = `ulef-${Date.now().toString().slice(-4)}`;
+      const nameStr = (newProductData.name || 'Signature Luxury Silhouette').trim();
+      const slug = nameStr.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      createdProduct = sanitizeProduct({
+        ...newProductData,
+        id,
+        slug,
+        rating: 5.0,
+        reviewsCount: 0,
+        reviews: [],
+        createdAt: new Date().toISOString()
+      });
+    }
 
     setProducts(prev => {
-      const updated = [newProduct, ...prev];
-      // Save synchronously immediately to prevent reload race conditions
+      const filtered = prev.filter(p => p.id !== createdProduct.id);
+      const updated = [createdProduct, ...filtered];
       try {
         localStorage.setItem('ulef_products', JSON.stringify(updated));
-      } catch (storageErr) {
-        console.warn('Quota exceeded on addProduct, optimizing payload...', storageErr);
-        try {
-          const optimized = updated.map(p => ({
-            ...p,
-            images: p.images.map(img => img.startsWith('data:') && img.length > 50000 ? img.slice(0, 50000) : img)
-          }));
-          localStorage.setItem('ulef_products', JSON.stringify(optimized));
-        } catch (innerErr) {
-          console.error('Failed to persist products to storage', innerErr);
-        }
-      }
+      } catch {}
       return updated;
     });
 
-    showToast('Product Created', `Added "${newProduct.name}" to catalog and saved permanently.`, 'success');
+    showToast('Product Live on Supabase', `"${createdProduct.name}" is now live for all visitors!`, 'success');
   };
 
-  const updateProduct = (id: string, updated: Partial<Product>) => {
+  const updateProduct = async (idOrProduct: string | Product, updatedArg?: Partial<Product>) => {
+    let id: string;
+    let updated: Partial<Product>;
+    if (typeof idOrProduct === 'object' && idOrProduct !== null) {
+      id = (idOrProduct as Product).id;
+      updated = idOrProduct;
+    } else {
+      id = idOrProduct as string;
+      updated = updatedArg || {};
+    }
+
+    // 1. Optimistic local update
     setProducts(prev => {
       const next = prev.map(p => (p.id === id ? sanitizeProduct({ ...p, ...updated }) : p));
       try {
         localStorage.setItem('ulef_products', JSON.stringify(next));
-      } catch (e) {
-        console.error('Update save error', e);
-      }
+      } catch {}
       return next;
     });
     if (selectedProduct && selectedProduct.id === id) {
       setSelectedProduct(prev => (prev ? sanitizeProduct({ ...prev, ...updated }) : null));
     }
-    showToast('Product Updated', 'Changes saved successfully.', 'success');
+
+    // 2. Direct Supabase update
+    await updateSupabaseProduct(id, updated);
+    showToast('Product Updated in Supabase', 'Live changes saved successfully.', 'success');
   };
 
-  const deleteProduct = (id: string) => {
+  const deleteProduct = async (id: string) => {
+    // 1. Optimistic delete
     setProducts(prev => {
       const next = prev.filter(p => p.id !== id);
       try {
         localStorage.setItem('ulef_products', JSON.stringify(next));
-      } catch (e) {
-        console.error('Delete save error', e);
-      }
+      } catch {}
       return next;
     });
-    showToast('Product Removed', 'Product removed from catalog.', 'info');
+
+    // 2. Direct Supabase delete
+    await deleteSupabaseProduct(id);
+    showToast('Product Removed', 'Product deleted from Supabase live catalog.', 'info');
   };
 
   const addReview = (productId: string, reviewData: Omit<Review, 'id' | 'date'>) => {
@@ -1154,6 +1250,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setMerchantUpiName,
         codSettings,
         setCodSettings,
+        heroBannerImage,
+        setHeroBannerImage,
+        heroBannerOpacity,
+        setHeroBannerOpacity,
         customerContacts,
         broadcastWebhookUrl,
         setBroadcastWebhookUrl,
@@ -1161,6 +1261,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         addProduct,
         updateProduct,
         deleteProduct,
+        reloadProductsFromSupabase,
+        isProductsLoading,
         addReview,
         deleteReview,
         replyToReview,

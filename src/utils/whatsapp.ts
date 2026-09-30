@@ -179,7 +179,7 @@ export function generateCustomerDispatchWhatsAppMessage(order: Order): string {
     `🚚 *Courier Partner:* ${order.carrier}`,
     `🔢 *AWB / Tracking Number:* ${order.trackingNumber}`,
     `⏳ *Estimated Delivery:* ${order.estimatedDelivery}`,
-    order.paymentMethod === 'cash_on_delivery' ? `💵 *Amount to Pay on Delivery (COD):* ${order.total}` : `✅ *Payment:* Paid`,
+    order.paymentMethod === 'cash_on_delivery' ? `💵 *Amount to Pay on Delivery (COD):* ₹${Math.round(order.total * 86.5).toLocaleString('en-IN')}` : `✅ *Payment:* Paid`,
     ``,
     `📍 *Delivery Address:* ${order.shippingAddress.addressLine1}, ${order.shippingAddress.city}, ${order.shippingAddress.state} - ${order.shippingAddress.postalCode}`,
     `━━━━━━━━━━━━━━━━━━━━━`,

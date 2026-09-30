@@ -4,7 +4,10 @@ import { ArrowRight, Sparkles } from 'lucide-react';
 import { motion } from 'motion/react';
 
 export const HeroBanner: React.FC = () => {
-  const { setActiveView } = useStore();
+  const { setActiveView, heroBannerImage, heroBannerOpacity } = useStore();
+
+  const currentPoster = heroBannerImage || "https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=2000&q=90";
+  const posterOpacity = typeof heroBannerOpacity === 'number' ? heroBannerOpacity / 100 : 0.40;
 
   return (
     <div className="relative w-full max-w-[100vw] overflow-x-hidden bg-neutral-950 text-white">
@@ -12,10 +15,11 @@ export const HeroBanner: React.FC = () => {
       <div className="relative min-h-[85vh] lg:min-h-[88vh] flex items-center justify-center pt-8 pb-14 sm:pt-12 sm:pb-20">
         <div className="absolute inset-0 z-0 overflow-hidden">
           <img
-            src="https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=2000&q=90"
+            src={currentPoster}
             alt="ULEF.IN Editorial Lookbook"
             referrerPolicy="no-referrer"
-            className="w-full h-full object-cover [object-position:center_top] opacity-40 scale-100 sm:scale-105 transition-transform duration-10000 hover:scale-100"
+            style={{ opacity: posterOpacity }}
+            className="w-full h-full object-cover [object-position:center_top] scale-100 sm:scale-105 transition-transform duration-10000 hover:scale-100"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/40 to-neutral-950/70" />
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-transparent via-neutral-950/50 to-neutral-950" />

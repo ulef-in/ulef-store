@@ -71,6 +71,8 @@ export const AdminView: React.FC = () => {
     addProduct,
     updateProduct,
     deleteProduct,
+    reloadProductsFromSupabase,
+    isProductsLoading,
     orders,
     updateOrderStatus,
     updateOrderCourier,
@@ -84,6 +86,10 @@ export const AdminView: React.FC = () => {
     setMerchantUpiName,
     codSettings,
     setCodSettings,
+    heroBannerImage,
+    setHeroBannerImage,
+    heroBannerOpacity,
+    setHeroBannerOpacity,
     customerContacts,
     broadcastWebhookUrl,
     setBroadcastWebhookUrl,
@@ -116,6 +122,7 @@ export const AdminView: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   // WhatsApp Broadcast state
   const [selectedProductForBroadcast, setSelectedProductForBroadcast] = useState<Product | null>(null);
@@ -163,6 +170,19 @@ export const AdminView: React.FC = () => {
   });
   const [isUploadingQr, setIsUploadingQr] = useState(false);
   const qrFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Hero Banner Poster State
+  const [tempBannerUrl, setTempBannerUrl] = useState(heroBannerImage || 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=2000&q=90');
+  const [tempBannerOpacity, setTempBannerOpacity] = useState(heroBannerOpacity ?? 40);
+  const bannerFileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (heroBannerImage) setTempBannerUrl(heroBannerImage);
+  }, [heroBannerImage]);
+
+  useEffect(() => {
+    if (typeof heroBannerOpacity === 'number') setTempBannerOpacity(heroBannerOpacity);
+  }, [heroBannerOpacity]);
 
   // Inline courier state per order
   const [courierDrafts, setCourierDrafts] = useState<Record<string, { carrier: string; trackingNumber: string; estimatedDelivery: string }>>({});
@@ -552,6 +572,26 @@ export const AdminView: React.FC = () => {
     });
   };
 
+  const handleSaveEditedProduct = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingProduct) return;
+    await updateProduct(editingProduct.id, {
+      name: editingProduct.name,
+      category: editingProduct.category,
+      price: Number(editingProduct.price),
+      originalPrice: Number(editingProduct.originalPrice),
+      gsm: Number(editingProduct.gsm),
+      fitType: editingProduct.fitType,
+      images: editingProduct.images,
+      colors: editingProduct.colors,
+      isBestSeller: editingProduct.isBestSeller,
+      isNewArrival: editingProduct.isNewArrival,
+      stock: editingProduct.stock
+    });
+    setIsEditModalOpen(false);
+    setEditingProduct(null);
+  };
+
   const filteredProducts = products.filter(p =>
     p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     p.category.toLowerCase().includes(searchQuery.toLowerCase())
@@ -903,13 +943,25 @@ export const AdminView: React.FC = () => {
               />
             </div>
 
-            <button
-              onClick={() => setIsAddModalOpen(true)}
-              className="px-5 py-2.5 rounded-xl bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 font-bold font-display uppercase tracking-wider text-xs flex items-center gap-2 shadow-sm"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Add New Oversized Drop</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => reloadProductsFromSupabase()}
+                disabled={isProductsLoading}
+                className="px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-300 font-mono text-xs flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+                title="Sync live products with Supabase"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isProductsLoading ? 'animate-spin text-amber-500' : ''}`} />
+                <span className="hidden sm:inline">{isProductsLoading ? 'Syncing...' : 'Sync Supabase'}</span>
+              </button>
+
+              <button
+                onClick={() => setIsAddModalOpen(true)}
+                className="px-5 py-2.5 rounded-xl bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 font-bold font-display uppercase tracking-wider text-xs flex items-center gap-2 shadow-sm cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Add New Oversized Drop</span>
+              </button>
+            </div>
           </div>
 
           {/* Products Table / Cards */}
@@ -1006,9 +1058,23 @@ export const AdminView: React.FC = () => {
                       <span>WhatsApp Broadcast</span>
                     </button>
                     <button
-                      onClick={() => deleteProduct(product.id)}
-                      className="p-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-400 hover:text-red-500 hover:border-red-300 transition-colors"
-                      title="Delete Product"
+                      onClick={() => {
+                        setEditingProduct({ ...product });
+                        setIsEditModalOpen(true);
+                      }}
+                      className="p-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-500 hover:text-amber-500 hover:border-amber-300 dark:hover:border-amber-500/50 transition-colors cursor-pointer"
+                      title="Edit Product Details & Supabase Record"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (confirm(`Kya aap "${product.name}" ko Supabase database se permanently delete karna chahte hain?`)) {
+                          deleteProduct(product.id);
+                        }
+                      }}
+                      className="p-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-400 hover:text-red-500 hover:border-red-300 transition-colors cursor-pointer"
+                      title="Delete Product from Supabase"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -1976,6 +2042,225 @@ export const AdminView: React.FC = () => {
               </div>
             </div>
           </div>
+
+          {/* Section 5: Homepage Hero Background Poster & Lookbook Banner */}
+          <div className="p-6 rounded-3xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-sm space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-neutral-100 dark:border-neutral-800 pb-4">
+              <div className="flex items-center gap-2 text-amber-500">
+                <Sparkles className="w-5 h-5" />
+                <div>
+                  <h4 className="text-sm font-bold font-display uppercase text-neutral-950 dark:text-white">
+                    5. Homepage Hero Background Poster (Storefront Banner)
+                  </h4>
+                  <span className="text-[11px] text-neutral-400">
+                    Website ke mukhya background poster ko live change karein ya custom photo upload karein
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const defaultUrl = 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=2000&q=90';
+                    setTempBannerUrl(defaultUrl);
+                    setTempBannerOpacity(40);
+                    setHeroBannerImage(defaultUrl);
+                    setHeroBannerOpacity(40);
+                    showToast('Reset to Default', 'Restored default editorial background poster.', 'info');
+                  }}
+                  className="px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400 text-xs font-mono transition-colors cursor-pointer"
+                >
+                  Reset Default
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setHeroBannerImage(tempBannerUrl);
+                    setHeroBannerOpacity(tempBannerOpacity);
+                    showToast('Poster Updated', 'Homepage background poster is now live!', 'success');
+                  }}
+                  className="px-4 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-neutral-950 font-bold text-xs uppercase tracking-wider font-display flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  <span>Save Poster</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Live Visual Preview & Controls */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              {/* Preview Thumbnail */}
+              <div className="lg:col-span-5 flex flex-col space-y-2">
+                <label className="text-[10px] text-neutral-400 uppercase font-bold tracking-wider">
+                  Live Poster Preview
+                </label>
+                <div className="relative aspect-[16/10] w-full rounded-2xl overflow-hidden bg-neutral-950 border border-neutral-200 dark:border-neutral-800 shadow-inner flex items-center justify-center text-center p-4">
+                  <img
+                    src={tempBannerUrl}
+                    alt="Poster Preview"
+                    referrerPolicy="no-referrer"
+                    style={{ opacity: tempBannerOpacity / 100 }}
+                    className="absolute inset-0 w-full h-full object-cover [object-position:center_top]"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/40 to-neutral-950/70" />
+                  <div className="relative z-10 text-white space-y-1">
+                    <span className="text-[9px] font-mono tracking-widest text-amber-400 uppercase bg-black/60 px-2 py-0.5 rounded-full border border-amber-400/30">
+                      DROP 04 PREVIEW
+                    </span>
+                    <h5 className="font-display font-black text-sm uppercase tracking-tight">
+                      HEAVYWEIGHT 240 GSM
+                    </h5>
+                    <p className="text-[9px] text-neutral-300 font-light max-w-xs mx-auto line-clamp-1">
+                      Sculpted Drape • Anti-Bacon Collar
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between text-[10px] font-mono text-neutral-400 px-1">
+                  <span>Current Opacity: <strong className="text-neutral-950 dark:text-white">{tempBannerOpacity}%</strong></span>
+                  <span className="text-emerald-500 font-bold">● Active on Homepage</span>
+                </div>
+              </div>
+
+              {/* Form Controls & Presets */}
+              <div className="lg:col-span-7 space-y-4">
+                {/* Image URL Input */}
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[10px] text-neutral-400 uppercase font-bold">
+                      Poster Image URL (Koi bhi Image Link)
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => bannerFileInputRef.current?.click()}
+                      className="text-[10px] text-blue-500 hover:underline flex items-center gap-1 font-bold cursor-pointer"
+                    >
+                      <Upload className="w-3 h-3" />
+                      <span>Upload from Mobile/PC</span>
+                    </button>
+                  </div>
+                  <input
+                    type="url"
+                    value={tempBannerUrl}
+                    onChange={(e) => setTempBannerUrl(e.target.value)}
+                    placeholder="https://images.unsplash.com/..."
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 text-xs font-mono text-neutral-950 dark:text-white focus:outline-none focus:border-amber-400"
+                  />
+                  <input
+                    ref={bannerFileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        const file = e.target.files[0];
+                        if (file.size > 6 * 1024 * 1024) {
+                          showToast('File Too Large', 'Please select an image under 6MB.', 'error');
+                          return;
+                        }
+                        const reader = new FileReader();
+                        reader.onload = (uploadEvt) => {
+                          if (uploadEvt.target?.result) {
+                            setTempBannerUrl(uploadEvt.target.result as string);
+                            showToast('Photo Loaded', 'Click "Save Poster" to apply.', 'info');
+                          }
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                      e.target.value = '';
+                    }}
+                    className="hidden"
+                  />
+                </div>
+
+                {/* Opacity Slider */}
+                <div>
+                  <div className="flex items-center justify-between mb-1 text-[10px] text-neutral-400 uppercase font-bold">
+                    <span>Background Image Opacity / Brightness</span>
+                    <span className="font-mono text-neutral-950 dark:text-white">{tempBannerOpacity}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={15}
+                    max={90}
+                    step={5}
+                    value={tempBannerOpacity}
+                    onChange={(e) => setTempBannerOpacity(Number(e.target.value))}
+                    className="w-full accent-amber-400 cursor-pointer"
+                  />
+                  <div className="flex justify-between text-[9px] font-mono text-neutral-400 mt-0.5">
+                    <span>Darker (15% - High Text Contrast)</span>
+                    <span>Brighter (90% - Vivid Picture)</span>
+                  </div>
+                </div>
+
+                {/* Curated Luxury Streetwear Presets */}
+                <div className="space-y-1.5 pt-1">
+                  <label className="text-[10px] text-neutral-400 uppercase font-bold">
+                    One-Click Luxury Streetwear Presets:
+                  </label>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {[
+                      {
+                        title: 'Noir Editorial (Default)',
+                        url: 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=2000&q=90',
+                        opacity: 40
+                      },
+                      {
+                        title: 'Studio Lookbook',
+                        url: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=2000&q=90',
+                        opacity: 45
+                      },
+                      {
+                        title: 'Acid Street Drape',
+                        url: 'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?auto=format&fit=crop&w=2000&q=90',
+                        opacity: 40
+                      },
+                      {
+                        title: 'Architectural Model',
+                        url: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?auto=format&fit=crop&w=2000&q=90',
+                        opacity: 45
+                      }
+                    ].map((preset, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => {
+                          setTempBannerUrl(preset.url);
+                          setTempBannerOpacity(preset.opacity);
+                        }}
+                        className={`p-2 rounded-xl border text-left flex flex-col justify-between gap-1 transition-all cursor-pointer ${
+                          tempBannerUrl === preset.url
+                            ? 'border-amber-400 bg-amber-400/10'
+                            : 'border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700 bg-neutral-50 dark:bg-neutral-950'
+                        }`}
+                      >
+                        <img
+                          src={preset.url}
+                          alt={preset.title}
+                          referrerPolicy="no-referrer"
+                          className="w-full h-12 rounded-lg object-cover"
+                        />
+                        <span className="text-[10px] font-bold text-neutral-800 dark:text-neutral-200 truncate block">
+                          {preset.title}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Code file explanation box */}
+                <div className="p-3 rounded-xl bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 text-[10px] font-mono text-neutral-500 space-y-1">
+                  <div className="font-bold text-neutral-800 dark:text-neutral-200 flex items-center gap-1.5">
+                    <FileText className="w-3 h-3 text-amber-500" />
+                    <span>Source Code File Location:</span>
+                  </div>
+                  <p>
+                    Code se change karne ke liye file path hai: <strong className="text-amber-500 select-all">src/components/HeroBanner.tsx</strong> (Line 15).
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
@@ -2572,6 +2857,184 @@ export const AdminView: React.FC = () => {
                     className="px-6 py-2.5 rounded-xl bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 font-bold font-display uppercase tracking-wider text-xs"
                   >
                     Save & Publish Drop
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+
+        {/* Edit Product Modal (Live Supabase) */}
+        {isEditModalOpen && editingProduct && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => {
+                setIsEditModalOpen(false);
+                setEditingProduct(null);
+              }}
+              className="fixed inset-0 bg-black/80 backdrop-blur-sm"
+            />
+
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="relative w-full max-w-2xl bg-white dark:bg-neutral-900 rounded-3xl border border-neutral-200 dark:border-neutral-800 shadow-2xl p-6 sm:p-8 max-h-[90vh] overflow-y-auto z-10"
+            >
+              <div className="flex items-center justify-between pb-4 border-b border-neutral-200 dark:border-neutral-800">
+                <div>
+                  <h3 className="text-lg font-bold font-display uppercase tracking-tight text-neutral-950 dark:text-white flex items-center gap-2">
+                    <Database className="w-5 h-5 text-amber-500" />
+                    <span>Edit Product in Supabase</span>
+                  </h3>
+                  <p className="text-[10px] font-mono text-neutral-400 mt-0.5">
+                    Supabase ID: {editingProduct.id}
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    setIsEditModalOpen(false);
+                    setEditingProduct(null);
+                  }}
+                  className="text-neutral-400 hover:text-neutral-950 dark:hover:text-white cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveEditedProduct} className="space-y-4 pt-4">
+                <div>
+                  <label className="block text-xs font-mono uppercase text-neutral-500 mb-1">Product Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingProduct.name}
+                    onChange={(e) => setEditingProduct({ ...editingProduct, name: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 text-xs text-neutral-950 dark:text-white"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-mono uppercase text-neutral-500 mb-1">Category</label>
+                    <select
+                      value={editingProduct.category}
+                      onChange={(e) => setEditingProduct({ ...editingProduct, category: e.target.value as any })}
+                      className="w-full px-4 py-2.5 rounded-xl bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 text-xs text-neutral-950 dark:text-white font-mono"
+                    >
+                      <option value="Essentials">Essentials</option>
+                      <option value="Graphic Street">Graphic Street</option>
+                      <option value="Acid & Vintage Wash">Acid & Vintage Wash</option>
+                      <option value="Minimalist Heavyweight">Minimalist Heavyweight</option>
+                      <option value="Limited Drop">Limited Drop</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-mono uppercase text-neutral-500 mb-1">Fit Silhouette</label>
+                    <select
+                      value={editingProduct.fitType}
+                      onChange={(e) => setEditingProduct({ ...editingProduct, fitType: e.target.value as any })}
+                      className="w-full px-4 py-2.5 rounded-xl bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 text-xs text-neutral-950 dark:text-white font-mono"
+                    >
+                      <option value="Boxy Drop-Shoulder">Boxy Drop-Shoulder</option>
+                      <option value="Heavyweight Relaxed">Heavyweight Relaxed</option>
+                      <option value="Sculpted Minimalist">Sculpted Minimalist</option>
+                      <option value="Vintage Wash Oversized">Vintage Wash Oversized</option>
+                      <option value="Acid Washed Boxy">Acid Washed Boxy</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-xs font-mono uppercase text-neutral-500 mb-1">Price (Base USD)</label>
+                    <input
+                      type="number"
+                      required
+                      value={editingProduct.price}
+                      onChange={(e) => setEditingProduct({ ...editingProduct, price: parseFloat(e.target.value) || 0 })}
+                      className="w-full px-4 py-2.5 rounded-xl bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 text-xs text-neutral-950 dark:text-white font-mono"
+                    />
+                    <span className="text-[10px] font-mono text-emerald-500 mt-1 block">
+                      Shows as: {formatPrice(editingProduct.price)}
+                    </span>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-mono uppercase text-neutral-500 mb-1">Original MSRP</label>
+                    <input
+                      type="number"
+                      value={editingProduct.originalPrice || ''}
+                      onChange={(e) => setEditingProduct({ ...editingProduct, originalPrice: parseFloat(e.target.value) || undefined })}
+                      className="w-full px-4 py-2.5 rounded-xl bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 text-xs text-neutral-950 dark:text-white font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-mono uppercase text-neutral-500 mb-1">GSM Weight</label>
+                    <input
+                      type="number"
+                      value={editingProduct.gsm}
+                      onChange={(e) => setEditingProduct({ ...editingProduct, gsm: parseInt(e.target.value) || 240 })}
+                      className="w-full px-4 py-2.5 rounded-xl bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 text-xs text-neutral-950 dark:text-white font-mono"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-mono uppercase text-neutral-500 mb-1">Primary Image URL</label>
+                  <input
+                    type="url"
+                    required
+                    value={editingProduct.images[0] || ''}
+                    onChange={(e) => {
+                      const newImages = [...editingProduct.images];
+                      newImages[0] = e.target.value;
+                      setEditingProduct({ ...editingProduct, images: newImages });
+                    }}
+                    className="w-full px-4 py-2.5 rounded-xl bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 text-xs text-neutral-950 dark:text-white font-mono"
+                  />
+                </div>
+
+                <div className="flex items-center gap-6 pt-2">
+                  <label className="flex items-center gap-2 cursor-pointer text-xs font-mono">
+                    <input
+                      type="checkbox"
+                      checked={editingProduct.isBestSeller || false}
+                      onChange={(e) => setEditingProduct({ ...editingProduct, isBestSeller: e.target.checked })}
+                      className="rounded"
+                    />
+                    <span>Best Seller Badge</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer text-xs font-mono">
+                    <input
+                      type="checkbox"
+                      checked={editingProduct.isNewArrival || false}
+                      onChange={(e) => setEditingProduct({ ...editingProduct, isNewArrival: e.target.checked })}
+                      className="rounded"
+                    />
+                    <span>New Drop Badge</span>
+                  </label>
+                </div>
+
+                <div className="flex justify-end gap-3 pt-4 border-t border-neutral-200 dark:border-neutral-800">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsEditModalOpen(false);
+                      setEditingProduct(null);
+                    }}
+                    className="px-4 py-2 text-xs font-mono uppercase text-neutral-500 hover:text-neutral-950 dark:hover:text-white cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-6 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-neutral-950 font-bold font-display uppercase tracking-wider text-xs flex items-center gap-2 shadow-md cursor-pointer"
+                  >
+                    <Save className="w-4 h-4" />
+                    <span>Save Changes to Supabase</span>
                   </button>
                 </div>
               </form>

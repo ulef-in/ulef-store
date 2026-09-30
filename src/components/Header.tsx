@@ -46,11 +46,11 @@ export const Header: React.FC = () => {
     { label: 'Contact', view: 'contact' },
   ];
 
-  const currencies: { code: 'USD' | 'EUR' | 'GBP' | 'INR'; label: string; symbol: string }[] = [
+  const currencies: { code: 'INR' | 'USD' | 'EUR' | 'GBP'; label: string; symbol: string }[] = [
+    { code: 'INR', label: 'INR (₹)', symbol: '₹' },
     { code: 'USD', label: 'USD ($)', symbol: '$' },
     { code: 'EUR', label: 'EUR (€)', symbol: '€' },
     { code: 'GBP', label: 'GBP (£)', symbol: '£' },
-    { code: 'INR', label: 'INR (₹)', symbol: '₹' },
   ];
 
   const handleNavClick = (view: ViewType) => {
