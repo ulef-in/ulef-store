@@ -41,6 +41,26 @@ export const ProductDetailView: React.FC = () => {
 
   const product = selectedProduct || products[0];
 
+  // Filter out any legacy dummy images that do not belong to the current product
+  const DUMMY_FALLBACK_URLS = new Set([
+    'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=1200&q=85',
+    'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?auto=format&fit=crop&w=1200&q=85',
+    'https://images.unsplash.com/photo-1576566588028-4147f3842f27?auto=format&fit=crop&w=1200&q=85'
+  ]);
+
+  // Genuine images belonging strictly to this product
+  const rawImages = (product?.images && product.images.length > 0)
+    ? product.images
+    : (product?.colors?.[0]?.image ? [product.colors[0].image] : []);
+
+  // Filter out dummy photos if product has its own custom image
+  const hasCustomImages = rawImages.some(img => !DUMMY_FALLBACK_URLS.has(img));
+  const productImages = hasCustomImages
+    ? rawImages.filter(img => !DUMMY_FALLBACK_URLS.has(img))
+    : rawImages.slice(0, 1);
+
+  const currentImages = productImages.length > 0 ? productImages : [product.images[0]];
+
   // State
   const [selectedSize, setSelectedSize] = useState<Size>('L');
   const [selectedColor, setSelectedColor] = useState<ProductColor>(product.colors[0]);
@@ -135,22 +155,24 @@ export const ProductDetailView: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
         {/* Left Column: Image Gallery with Interactive Zoom */}
         <div className="lg:col-span-7 flex flex-col-reverse sm:flex-row gap-4">
-          {/* Thumbnails */}
-          <div className="flex sm:flex-col gap-3 overflow-x-auto sm:overflow-y-auto sm:w-20 shrink-0 no-scrollbar">
-            {product.images.map((img, idx) => (
-              <button
-                key={idx}
-                onClick={() => setActiveImageIndex(idx)}
-                className={`relative w-16 h-20 sm:w-20 sm:h-24 rounded-xl overflow-hidden border transition-all shrink-0 ${
-                  activeImageIndex === idx
-                    ? 'border-neutral-950 dark:border-white ring-2 ring-neutral-950/20 dark:ring-white/20 scale-102'
-                    : 'border-neutral-200 dark:border-neutral-800 opacity-60 hover:opacity-100'
-                }`}
-              >
-                <img src={img} alt="Angle thumbnail" referrerPolicy="no-referrer" className="w-full h-full object-cover" />
-              </button>
-            ))}
-          </div>
+          {/* Thumbnails - ONLY show if product has more than 1 image */}
+          {currentImages.length > 1 && (
+            <div className="flex sm:flex-col gap-3 overflow-x-auto sm:overflow-y-auto sm:w-20 shrink-0 no-scrollbar">
+              {currentImages.map((img, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setActiveImageIndex(idx)}
+                  className={`relative w-16 h-20 sm:w-20 sm:h-24 rounded-xl overflow-hidden border transition-all shrink-0 ${
+                    activeImageIndex === idx
+                      ? 'border-neutral-950 dark:border-white ring-2 ring-neutral-950/20 dark:ring-white/20 scale-102'
+                      : 'border-neutral-200 dark:border-neutral-800 opacity-60 hover:opacity-100'
+                  }`}
+                >
+                  <img src={img} alt="Angle thumbnail" referrerPolicy="no-referrer" className="w-full h-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
 
           {/* Main Stage with Magnification Lens */}
           <div
@@ -160,7 +182,7 @@ export const ProductDetailView: React.FC = () => {
             className="relative flex-1 aspect-[3/4] rounded-2xl overflow-hidden bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 cursor-crosshair group"
           >
             <img
-              src={product.images[activeImageIndex] || product.images[0]}
+              src={currentImages[activeImageIndex] || currentImages[0]}
               alt={product.name}
               referrerPolicy="no-referrer"
               className={`w-full h-full object-cover object-center transition-transform duration-200 ${

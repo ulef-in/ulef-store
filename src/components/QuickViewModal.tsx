@@ -32,6 +32,24 @@ export const QuickViewModal: React.FC = () => {
 
   if (!product) return null;
 
+  // Filter out any legacy dummy images that do not belong to the current product
+  const DUMMY_FALLBACK_URLS = new Set([
+    'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=1200&q=85',
+    'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?auto=format&fit=crop&w=1200&q=85',
+    'https://images.unsplash.com/photo-1576566588028-4147f3842f27?auto=format&fit=crop&w=1200&q=85'
+  ]);
+
+  const rawImages = (product?.images && product.images.length > 0)
+    ? product.images
+    : (product?.colors?.[0]?.image ? [product.colors[0].image] : []);
+
+  const hasCustomImages = rawImages.some(img => !DUMMY_FALLBACK_URLS.has(img));
+  const productImages = hasCustomImages
+    ? rawImages.filter(img => !DUMMY_FALLBACK_URLS.has(img))
+    : rawImages.slice(0, 1);
+
+  const currentImages = productImages.length > 0 ? productImages : [product.images[0]];
+
   const currentColor = selectedColor || product.colors[0];
   const isSaved = isInWishlist(product.id);
   const stockForSelectedSize = product.stock[selectedSize] || 0;
@@ -76,7 +94,7 @@ export const QuickViewModal: React.FC = () => {
           <div className="md:w-1/2 bg-neutral-950 p-4 sm:p-6 flex flex-col justify-between">
             <div className="relative aspect-[3/4] w-full rounded-xl overflow-hidden bg-neutral-900 border border-neutral-800">
               <img
-                src={product.images[activeImageIndex] || product.images[0]}
+                src={currentImages[activeImageIndex] || currentImages[0]}
                 alt={product.name}
                 referrerPolicy="no-referrer"
                 className="w-full h-full object-cover"
@@ -86,20 +104,22 @@ export const QuickViewModal: React.FC = () => {
               </span>
             </div>
 
-            {/* Thumbnail selector */}
-            <div className="flex gap-2 mt-4 overflow-x-auto no-scrollbar">
-              {product.images.map((img, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setActiveImageIndex(idx)}
-                  className={`w-14 h-16 rounded-lg overflow-hidden border transition-all shrink-0 ${
-                    activeImageIndex === idx ? 'border-white ring-1 ring-white' : 'border-neutral-800 opacity-60 hover:opacity-100'
-                  }`}
-                >
-                  <img src={img} alt="Thumbnail" referrerPolicy="no-referrer" className="w-full h-full object-cover" />
-                </button>
-              ))}
-            </div>
+            {/* Thumbnail selector - ONLY show if product has more than 1 image */}
+            {currentImages.length > 1 && (
+              <div className="flex gap-2 mt-4 overflow-x-auto no-scrollbar">
+                {currentImages.map((img, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setActiveImageIndex(idx)}
+                    className={`w-14 h-16 rounded-lg overflow-hidden border transition-all shrink-0 ${
+                      activeImageIndex === idx ? 'border-white ring-1 ring-white' : 'border-neutral-800 opacity-60 hover:opacity-100'
+                    }`}
+                  >
+                    <img src={img} alt="Thumbnail" referrerPolicy="no-referrer" className="w-full h-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Right Product Details */}

@@ -16,6 +16,7 @@ import {
   Flame
 } from 'lucide-react';
 import { motion } from 'motion/react';
+import { DEFAULT_HERO_POSTER } from '../lib/supabase';
 
 export const HomeView: React.FC = () => {
   const { products, setActiveView, openProductDetail } = useStore();
@@ -233,12 +234,12 @@ export const HomeView: React.FC = () => {
               </div>
             </div>
 
-            <div className="relative aspect-video lg:aspect-auto min-h-[340px] overflow-hidden">
+            <div className="relative aspect-video lg:aspect-auto min-h-[340px] overflow-hidden bg-neutral-950">
               <img
-                src="https://images.unsplash.com/photo-1576566588028-4147f3842f27?auto=format&fit=crop&w=1200&q=85"
-                alt="Lookbook Model"
+                src={products[0]?.images?.[0] || products[0]?.colors?.[0]?.image || DEFAULT_HERO_POSTER}
+                alt={products[0]?.name || 'Lookbook Featured Silhouette'}
                 referrerPolicy="no-referrer"
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover [object-position:center_top]"
               />
             </div>
           </div>

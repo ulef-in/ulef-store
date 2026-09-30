@@ -1,114 +1,169 @@
 import React from 'react';
 import { useStore } from '../context/StoreContext';
 import { ArrowRight, Sparkles, Layers, Eye } from 'lucide-react';
+import { DEFAULT_HERO_POSTER } from '../lib/supabase';
 
 export const LookbookView: React.FC = () => {
   const { products, openProductDetail, setActiveView } = useStore();
 
-  const looks = [
-    {
-      id: 'look-1',
-      title: 'DROP 04 // SHIBUYA DUSK',
-      city: 'Tokyo, Japan',
-      image: 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=1200&q=85',
-      description: 'Sculpted 240 GSM Heavyweight Washed Onyx paired with raw-edge technical denim.',
-      featuredProduct: products[0],
-    },
-    {
-      id: 'look-2',
-      title: 'DROP 04 // KREUZBERG CONCRETE',
-      city: 'Berlin, Germany',
-      image: 'https://images.unsplash.com/photo-1576566588028-4147f3842f27?auto=format&fit=crop&w=1200&q=85',
-      description: 'Chalk White Clean Silhouette with tailored pleated trousers and minimalist footwear.',
-      featuredProduct: products[1],
-    },
-    {
-      id: 'look-3',
-      title: 'DROP 04 // SOHO ARCHITECTURE',
-      city: 'New York, USA',
-      image: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?auto=format&fit=crop&w=1200&q=85',
-      description: '240 GSM French Terry Graphic Tee layered over high-neck thermal underlay.',
-      featuredProduct: products[2],
-    },
-    {
-      id: 'look-4',
-      title: 'DROP 04 // MITTE BRUTALISM',
-      city: 'Berlin, Germany',
-      image: 'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?auto=format&fit=crop&w=1200&q=85',
-      description: 'Acid Wash Mineral Charcoal with wide-leg cargo utility trousers.',
-      featuredProduct: products[3],
-    },
-  ];
+  // Dynamic live products from inventory (excluding system records)
+  const liveLooks = (products || []).filter(
+    (p) => p && p.id && p.name !== '__SYSTEM_HERO_POSTER__'
+  );
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-12">
       {/* Header */}
       <div className="text-center max-w-3xl mx-auto space-y-3">
-        <span className="text-xs font-mono uppercase tracking-[0.25em] text-amber-500 font-bold">
-          EDITORIAL CAMPAIGN ARCHIVE
-        </span>
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-500 text-xs font-mono uppercase tracking-[0.2em] font-bold">
+          <Sparkles className="w-3.5 h-3.5" />
+          <span>EDITORIAL CAMPAIGN ARCHIVE</span>
+        </div>
         <h1 className="text-3xl sm:text-6xl font-black font-display tracking-tight text-neutral-950 dark:text-white uppercase">
           DROP 04 LOOKBOOK
         </h1>
-        <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400 font-light leading-relaxed">
-          Proportions study exploring heavy cotton drape dynamics, drop-shoulder silhouettes, and structural streetwear styling across global metropolises.
+        <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400 font-light leading-relaxed max-w-2xl mx-auto">
+          Architectural silhouettes engineered with 240 GSM combed compact cotton. Proportions study exploring heavyweight drape dynamics, drop-shoulder silhouettes, and structural streetwear tailoring.
         </p>
       </div>
 
-      {/* Looks Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 sm:gap-12">
-        {looks.map((look, idx) => (
-          <div
-            key={look.id}
-            className="group relative rounded-3xl overflow-hidden bg-neutral-900 border border-neutral-800 flex flex-col justify-end min-h-[540px] p-8 text-white"
-          >
-            {/* Background Image */}
-            <div className="absolute inset-0 z-0 overflow-hidden">
-              <img
-                src={look.image}
-                alt={look.title}
-                referrerPolicy="no-referrer"
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 opacity-80 group-hover:opacity-90"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/40 to-transparent" />
-            </div>
+      {/* Dynamic Looks Grid */}
+      {liveLooks.length === 0 ? (
+        <div className="py-24 text-center space-y-4 rounded-3xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/50 p-8">
+          <Layers className="w-12 h-12 text-amber-500 mx-auto" />
+          <h2 className="text-xl font-bold font-display uppercase text-neutral-950 dark:text-white">
+            Editorial Archive Empty
+          </h2>
+          <p className="text-xs text-neutral-500 dark:text-neutral-400 max-w-md mx-auto">
+            New heavyweight silhouettes are currently in production in our atelier. Explore our storefront collection or check back shortly.
+          </p>
+          <div className="pt-2">
+            <button
+              onClick={() => setActiveView('shop')}
+              className="px-6 py-3 rounded-xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 font-bold font-display uppercase tracking-wider text-xs hover:opacity-90 transition-all cursor-pointer shadow-lg"
+            >
+              Browse All Products
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 sm:gap-12">
+          {liveLooks.map((product, idx) => {
+            const cardImage =
+              product.images?.[0] ||
+              product.colors?.[0]?.image ||
+              DEFAULT_HERO_POSTER;
 
-            {/* Overlay Content */}
-            <div className="relative z-10 space-y-4">
-              <div className="flex items-center justify-between text-xs font-mono">
-                <span className="text-amber-400 font-bold">{look.city.toUpperCase()}</span>
-                <span className="text-neutral-400">LOOK 0{idx + 1}</span>
-              </div>
+            const badgeText = product.isNewArrival
+              ? 'NEW DROP'
+              : product.isBestSeller
+              ? 'BESTSELLER'
+              : product.isFeatured
+              ? 'ICONIC SILHOUETTE'
+              : `${product.gsm || 240} GSM ARCHITECTURAL`;
 
-              <div>
-                <h3 className="text-2xl font-black font-display uppercase tracking-tight text-white">
-                  {look.title}
-                </h3>
-                <p className="text-xs text-neutral-300 font-light mt-1 max-w-md">
-                  {look.description}
-                </p>
-              </div>
+            return (
+              <div
+                key={product.id}
+                onClick={() => openProductDetail(product)}
+                className="group relative rounded-3xl overflow-hidden bg-neutral-900 border border-neutral-800 flex flex-col justify-between min-h-[560px] sm:min-h-[620px] p-6 sm:p-8 text-white transition-all duration-300 hover:border-neutral-700 shadow-2xl cursor-pointer"
+              >
+                {/* Background Image with Pan & Hover Effect */}
+                <div className="absolute inset-0 z-0 overflow-hidden bg-neutral-950">
+                  <img
+                    src={cardImage}
+                    alt={product.name}
+                    referrerPolicy="no-referrer"
+                    className="w-full h-full object-cover [object-position:center_top] transition-transform duration-700 group-hover:scale-105 opacity-85 group-hover:opacity-95"
+                  />
+                  {/* Luxury editorial vignette gradient overlays */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/45 to-neutral-950/20" />
+                  <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-transparent via-neutral-950/40 to-neutral-950/80" />
+                </div>
 
-              {look.featuredProduct && (
-                <div className="pt-2 flex items-center justify-between border-t border-neutral-800/80">
-                  <div className="text-xs font-mono">
-                    <span className="text-neutral-400 block text-[10px]">FEATURED SILHOUETTE:</span>
-                    <strong className="text-white">{look.featuredProduct.name}</strong>
+                {/* Card Top: Look Identifier & Badge */}
+                <div className="relative z-10 flex items-center justify-between text-xs font-mono">
+                  <div className="flex items-center gap-2">
+                    <span className="px-3 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-white font-bold tracking-wider">
+                      LOOK {String(idx + 1).padStart(2, '0')}
+                    </span>
+                    <span className="hidden sm:inline-block px-2.5 py-1 rounded-full bg-amber-500/20 border border-amber-500/30 text-amber-300 text-[10px] font-bold tracking-wider uppercase">
+                      {badgeText}
+                    </span>
                   </div>
 
-                  <button
-                    onClick={() => openProductDetail(look.featuredProduct)}
-                    className="px-4 py-2 rounded-xl bg-white text-neutral-950 font-bold font-display uppercase tracking-wider text-xs hover:bg-neutral-200 transition-colors flex items-center gap-1.5 shadow-lg"
-                  >
-                    <span>Shop Look</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </button>
+                  <span className="text-[11px] uppercase tracking-wider text-neutral-300 font-mono">
+                    {product.category || 'Atelier'}
+                  </span>
                 </div>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
+
+                {/* Card Bottom: Product Details & CTA */}
+                <div className="relative z-10 space-y-4 pt-16">
+                  <div>
+                    <span className="text-amber-400 font-bold tracking-widest text-[11px] font-mono uppercase block mb-1">
+                      {product.fitType || 'Boxy Drop-Shoulder'} • {product.gsm || 240} GSM
+                    </span>
+                    <h3 className="text-2xl sm:text-3xl font-black font-display uppercase tracking-tight text-white group-hover:text-amber-300 transition-colors">
+                      {product.name}
+                    </h3>
+                    <p className="text-xs sm:text-sm text-neutral-300 font-light mt-1.5 max-w-lg line-clamp-2 leading-relaxed">
+                      {product.subtitle ||
+                        product.fabricDetails ||
+                        product.description ||
+                        '100% Combed Compact Cotton with dense ribbed collar.'}
+                    </p>
+                  </div>
+
+                  {/* Pricing, Specs & Shop Look Button */}
+                  <div className="pt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-white/10">
+                    <div className="flex items-center gap-3">
+                      <div>
+                        <span className="text-neutral-400 block text-[9px] font-mono uppercase tracking-wider">
+                          ATELIER PRICE
+                        </span>
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-lg sm:text-xl font-bold text-white font-mono">
+                            ₹{product.price.toLocaleString('en-IN')}
+                          </span>
+                          {product.originalPrice > product.price && (
+                            <span className="text-xs text-neutral-500 line-through font-mono">
+                              ₹{product.originalPrice.toLocaleString('en-IN')}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="h-7 w-px bg-white/10" />
+
+                      <div>
+                        <span className="text-neutral-400 block text-[9px] font-mono uppercase tracking-wider">
+                          WEIGHT
+                        </span>
+                        <span className="text-amber-400 font-mono font-bold text-xs">
+                          {product.gsm || 240} GSM
+                        </span>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openProductDetail(product);
+                      }}
+                      className="px-5 py-2.5 rounded-xl bg-white text-neutral-950 font-bold font-display uppercase tracking-wider text-xs hover:bg-neutral-200 transition-all flex items-center justify-center gap-2 shadow-2xl active:scale-95 cursor-pointer shrink-0"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>Shop Look</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };

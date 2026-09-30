@@ -1,6 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
 import { Product } from '../types';
-import { INITIAL_PRODUCTS } from '../data/initialProducts';
 
 // Supabase configuration provided for project szuleuoasvqulhpaqcqn
 const SUPABASE_PROJECT_ID = 'szuleuoasvqulhpaqcqn';
@@ -33,12 +32,21 @@ export function mapRowToProduct(row: SupabaseProductRow): Product {
   const originalPrice = row.original_price ? Number(row.original_price) : Math.round(price * 1.3);
   const mainImage = row.image || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=1200&q=85';
   
-  const images = [
-    mainImage,
-    'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=1200&q=85',
-    'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?auto=format&fit=crop&w=1200&q=85',
-    'https://images.unsplash.com/photo-1576566588028-4147f3842f27?auto=format&fit=crop&w=1200&q=85'
-  ];
+  // Extract ONLY images belonging to this specific product. Never inject dummy photos from other garments
+  let images: string[] = [];
+  if (row.image) {
+    if (row.image.startsWith('[') && row.image.endsWith(']')) {
+      try {
+        const parsed = JSON.parse(row.image);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          images = parsed.filter(Boolean);
+        }
+      } catch {}
+    }
+  }
+  if (images.length === 0) {
+    images = [mainImage];
+  }
 
   return {
     id: row.id,
@@ -52,9 +60,7 @@ export function mapRowToProduct(row: SupabaseProductRow): Product {
     gsm: gsmNumber,
     fitType: (row.fit as any) || 'Boxy Drop-Shoulder',
     colors: [
-      { name: 'Signature Onyx', hex: '#1c1c1e', image: mainImage },
-      { name: 'Chalk White', hex: '#f4f4f2', image: images[1] },
-      { name: 'Vintage Drab', hex: '#3d4436', image: images[2] }
+      { name: 'Original', hex: '#1c1c1e', image: mainImage }
     ],
     sizes: ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'],
     stock: row.in_stock ? {
@@ -123,31 +129,13 @@ export async function fetchSupabaseProducts(): Promise<Product[]> {
     }
 
     if (data && data.length > 0) {
-      return data.map((row: SupabaseProductRow) => mapRowToProduct(row));
+      const validRows = data.filter((row: SupabaseProductRow) => 
+        row.name !== '__SYSTEM_HERO_POSTER__' && row.category !== 'System'
+      );
+      return validRows.map((row: SupabaseProductRow) => mapRowToProduct(row));
     }
 
-    // If table is empty, auto-seed initial collection into Supabase
-    try {
-      const rows = INITIAL_PRODUCTS.map(p => ({
-        name: p.name,
-        category: p.category || 'Essentials',
-        price: p.price,
-        original_price: p.originalPrice || Math.round(p.price * 1.25),
-        image: p.images[0] || (p.colors[0]?.image) || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=1200&q=85',
-        gsm: '240 GSM',
-        fit: p.fitType || 'Boxy Drop-Shoulder',
-        badge: p.isBestSeller ? 'BEST SELLER' : (p.isNewArrival ? 'NEW DROP' : 'DROP 04'),
-        in_stock: true
-      }));
-      const seedRes = await supabase.from('products').insert(rows).select();
-      if (seedRes.data && seedRes.data.length > 0) {
-        return seedRes.data.map((row: SupabaseProductRow) => mapRowToProduct(row));
-      }
-    } catch (seedErr) {
-      console.warn('Auto-seed attempt note:', seedErr);
-    }
-
-    return INITIAL_PRODUCTS;
+    return [];
   } catch (err) {
     console.error('Failed to load products from Supabase:', err);
     return [];
@@ -250,11 +238,18 @@ export async function updateSupabaseProduct(
   }
 }
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 /**
  * Deletes a product from Supabase
  */
 export async function deleteSupabaseProduct(id: string): Promise<{ success: boolean; error?: string }> {
   try {
+    // If not a valid UUID (e.g. old mock id like 'ulef-01'), it does not exist in Supabase table
+    if (!UUID_REGEX.test(id)) {
+      return { success: true };
+    }
+
     const { error } = await supabase
       .from('products')
       .delete()
@@ -273,17 +268,36 @@ export async function deleteSupabaseProduct(id: string): Promise<{ success: bool
 }
 
 /**
- * Realtime subscription to live Supabase changes on 'products' table
+ * Realtime subscription to live Supabase changes on 'products' and 'site_settings' tables
  */
-export function subscribeToProductChanges(onChange: () => void): () => void {
+export function subscribeToProductChanges(
+  onProductChange: () => void,
+  onPosterChange?: (newUrl: string) => void
+): () => void {
   try {
     const channel = supabase
-      .channel('products-live-sync-stream')
+      .channel('storefront-live-sync-stream')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'products' },
-        () => {
-          onChange();
+        (payload) => {
+          if (payload?.new && (payload.new as any).name === '__SYSTEM_HERO_POSTER__') {
+            if (onPosterChange && (payload.new as any).image) {
+              onPosterChange((payload.new as any).image);
+            }
+          }
+          onProductChange();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'site_settings' },
+        (payload) => {
+          if (payload?.new && (payload.new as any).key === 'hero_poster') {
+            if (onPosterChange && (payload.new as any).value) {
+              onPosterChange((payload.new as any).value);
+            }
+          }
         }
       )
       .subscribe();
@@ -295,6 +309,124 @@ export function subscribeToProductChanges(onChange: () => void): () => void {
     console.warn('Realtime subscription warning:', err);
     return () => {};
   }
+}
+
+export const DEFAULT_HERO_POSTER = 'https://i.ibb.co/ZRzv3tJF/1790769035371.png';
+
+/**
+ * Resolves any ImgBB page URL or missing string to the high-res direct image URL
+ */
+export function resolveHeroPosterUrl(url?: string | null): string {
+  if (!url || typeof url !== 'string' || !url.trim()) {
+    return DEFAULT_HERO_POSTER;
+  }
+  const clean = url.trim();
+  if (clean.includes('twpnSkhv') || clean.includes('ibb.co/twpnSkhv')) {
+    return 'https://i.ibb.co/ZRzv3tJF/1790769035371.png';
+  }
+  if (clean.includes('pBNr2kYf') || clean.includes('ibb.co/pBNr2kYf')) {
+    return 'https://i.ibb.co/ksz6KPN4/1790772061924.png';
+  }
+  // Eliminate legacy unsplash editorial placeholder/girl photo so it never flashes
+  if (clean.includes('photo-1503342217505-b0a15ec3261c')) {
+    return DEFAULT_HERO_POSTER;
+  }
+  return clean;
+}
+
+/**
+ * Saves the Hero Poster banner directly into Supabase 'site_settings' table:
+ * Upsert: { key: 'hero_poster', value: imageUrl }
+ * With cloud fallback sync across devices.
+ */
+export async function saveHeroPosterToSupabase(imageUrl: string): Promise<{ success: boolean; error?: string }> {
+  const cleanUrl = resolveHeroPosterUrl(imageUrl);
+  if (!cleanUrl) return { success: false, error: 'Empty image URL' };
+
+  // 1. Primary: Save directly into Supabase 'site_settings' table via upsert
+  try {
+    const { error } = await supabase
+      .from('site_settings')
+      .upsert({ key: 'hero_poster', value: cleanUrl }, { onConflict: 'key' });
+
+    if (error) {
+      console.warn('Supabase site_settings upsert notice:', error.message);
+    }
+  } catch (err: any) {
+    console.warn('site_settings error:', err);
+  }
+
+  // 2. Cloud Fallback: Also sync with system record in products table so all devices and phones immediately sync
+  try {
+    const { data: existing } = await supabase
+      .from('products')
+      .select('id')
+      .eq('name', '__SYSTEM_HERO_POSTER__')
+      .limit(1);
+
+    if (existing && existing.length > 0) {
+      await supabase
+        .from('products')
+        .update({
+          image: cleanUrl,
+          category: 'System',
+          in_stock: false,
+          price: 0
+        })
+        .eq('id', existing[0].id);
+    } else {
+      await supabase
+        .from('products')
+        .insert([{
+          name: '__SYSTEM_HERO_POSTER__',
+          category: 'System',
+          price: 0,
+          original_price: 0,
+          image: cleanUrl,
+          gsm: '240 GSM',
+          fit: 'Standard',
+          badge: null,
+          in_stock: false
+        }]);
+    }
+  } catch (fallbackErr) {
+    console.warn('Hero poster fallback cloud sync notice:', fallbackErr);
+  }
+
+  return { success: true };
+}
+
+/**
+ * Fetches the live Hero Poster directly from Supabase 'site_settings' table
+ */
+export async function fetchHeroPosterFromSupabase(): Promise<string | null> {
+  // 1. Primary: Try fetching from Supabase 'site_settings' table
+  try {
+    const { data, error } = await supabase
+      .from('site_settings')
+      .select('value')
+      .eq('key', 'hero_poster')
+      .maybeSingle();
+
+    if (!error && data?.value) {
+      return resolveHeroPosterUrl(data.value);
+    }
+  } catch (err) {}
+
+  // 2. Cloud Fallback: Fetch from system record
+  try {
+    const { data, error } = await supabase
+      .from('products')
+      .select('image')
+      .eq('name', '__SYSTEM_HERO_POSTER__')
+      .maybeSingle();
+
+    if (!error && data?.image) {
+      return resolveHeroPosterUrl(data.image);
+    }
+  } catch (err) {}
+
+  return DEFAULT_HERO_POSTER;
 }
 
 export interface AppointmentBooking {

@@ -53,7 +53,7 @@ import {
   ThumbsUp
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { fetchAppointments, AppointmentBooking } from '../lib/supabase';
+import { fetchAppointments, AppointmentBooking, DEFAULT_HERO_POSTER, resolveHeroPosterUrl } from '../lib/supabase';
 import {
   getMerchantWhatsAppPhone,
   getWhatsAppUrl,
@@ -172,8 +172,8 @@ export const AdminView: React.FC = () => {
   const qrFileInputRef = useRef<HTMLInputElement>(null);
 
   // Hero Banner Poster State
-  const [tempBannerUrl, setTempBannerUrl] = useState(heroBannerImage || 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=2000&q=90');
-  const [tempBannerOpacity, setTempBannerOpacity] = useState(heroBannerOpacity ?? 40);
+  const [tempBannerUrl, setTempBannerUrl] = useState(heroBannerImage || DEFAULT_HERO_POSTER);
+  const [tempBannerOpacity, setTempBannerOpacity] = useState(heroBannerOpacity ?? 50);
   const bannerFileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -203,6 +203,10 @@ export const AdminView: React.FC = () => {
       loadAppointmentsFromSupabase();
     }
   }, [activeTab]);
+
+  const handleDeleteProduct = (productId: string) => {
+    deleteProduct(productId);
+  };
 
   // Aggregated Reviews across all products
   const allReviewsList = React.useMemo(() => {
@@ -1068,15 +1072,17 @@ export const AdminView: React.FC = () => {
                       <Edit2 className="w-4 h-4" />
                     </button>
                     <button
-                      onClick={() => {
-                        if (confirm(`Kya aap "${product.name}" ko Supabase database se permanently delete karna chahte hain?`)) {
-                          deleteProduct(product.id);
-                        }
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        handleDeleteProduct(product.id);
                       }}
-                      className="p-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-400 hover:text-red-500 hover:border-red-300 transition-colors cursor-pointer"
-                      title="Delete Product from Supabase"
+                      className="p-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-400 hover:text-red-500 hover:border-red-300 transition-colors cursor-pointer active:scale-95 touch-manipulation"
+                      title="Delete Product"
+                      aria-label="Delete Product"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-4 h-4 pointer-events-none" />
                     </button>
                   </div>
                 </div>
@@ -2062,12 +2068,12 @@ export const AdminView: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => {
-                    const defaultUrl = 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=2000&q=90';
+                    const defaultUrl = DEFAULT_HERO_POSTER;
                     setTempBannerUrl(defaultUrl);
-                    setTempBannerOpacity(40);
+                    setTempBannerOpacity(50);
                     setHeroBannerImage(defaultUrl);
-                    setHeroBannerOpacity(40);
-                    showToast('Reset to Default', 'Restored default editorial background poster.', 'info');
+                    setHeroBannerOpacity(50);
+                    showToast('Reset to Default', 'Restored official ULEF Wolf Emblem background poster.', 'info');
                   }}
                   className="px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400 text-xs font-mono transition-colors cursor-pointer"
                 >
@@ -2076,9 +2082,10 @@ export const AdminView: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => {
-                    setHeroBannerImage(tempBannerUrl);
+                    const clean = resolveHeroPosterUrl(tempBannerUrl);
+                    setHeroBannerImage(clean);
                     setHeroBannerOpacity(tempBannerOpacity);
-                    showToast('Poster Updated', 'Homepage background poster is now live!', 'success');
+                    showToast('Poster Updated', 'Homepage background poster is now live across all devices!', 'success');
                   }}
                   className="px-4 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-neutral-950 font-bold text-xs uppercase tracking-wider font-display flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm"
                 >
@@ -2201,14 +2208,14 @@ export const AdminView: React.FC = () => {
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     {[
                       {
-                        title: 'Noir Editorial (Default)',
-                        url: 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=2000&q=90',
-                        opacity: 40
+                        title: 'ULEF Brand Atelier (Default)',
+                        url: DEFAULT_HERO_POSTER,
+                        opacity: 50
                       },
                       {
-                        title: 'Studio Lookbook',
-                        url: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=2000&q=90',
-                        opacity: 45
+                        title: 'Wolf Emblem Drop 04',
+                        url: 'https://i.ibb.co/ksz6KPN4/1790772061924.png',
+                        opacity: 50
                       },
                       {
                         title: 'Acid Street Drape',
@@ -2216,8 +2223,8 @@ export const AdminView: React.FC = () => {
                         opacity: 40
                       },
                       {
-                        title: 'Architectural Model',
-                        url: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?auto=format&fit=crop&w=2000&q=90',
+                        title: 'Studio Lookbook',
+                        url: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=2000&q=90',
                         opacity: 45
                       }
                     ].map((preset, idx) => (

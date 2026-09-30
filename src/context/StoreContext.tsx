@@ -6,7 +6,11 @@ import {
   createSupabaseProduct,
   updateSupabaseProduct,
   deleteSupabaseProduct,
-  subscribeToProductChanges
+  subscribeToProductChanges,
+  saveHeroPosterToSupabase,
+  fetchHeroPosterFromSupabase,
+  DEFAULT_HERO_POSTER,
+  resolveHeroPosterUrl
 } from '../lib/supabase';
 
 interface Toast {
@@ -201,11 +205,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return 'dark'; // default to high-end luxury dark aesthetic
   });
 
-  // Purge legacy product caches from localStorage to guarantee 100% pure Supabase data
+  // Purge legacy product & banner caches from localStorage to guarantee 100% pure Supabase data
   try {
     localStorage.removeItem('ulef_products');
     localStorage.removeItem('ulef_products_v2');
     localStorage.removeItem('ulef_products_v3');
+    localStorage.removeItem('ulef_hero_banner_image');
   } catch {}
 
   // Products state: Direct Real-Time Supabase Cloud Sync (replaces initialProducts & localStorage)
@@ -242,7 +247,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         return [];
       }
     }
-    return ['ulef-01', 'ulef-03'];
+    return [];
   });
 
   // Orders state
@@ -300,7 +305,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       name: 'Julian Vance',
       email: 'julian.vance@studio.com',
       role: isUnlocked ? 'admin' : 'customer',
-      wishlistIds: ['ulef-01', 'ulef-03']
+      wishlistIds: []
     };
   });
 
@@ -339,11 +344,22 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setIsProductsLoading(true);
     try {
       const live = await fetchSupabaseProducts();
-      if (live && live.length > 0) {
-        const sanitized = live.map(sanitizeProduct);
-        setProducts(sanitized);
-        setSelectedProduct(prev => prev ? (sanitized.find(p => p.id === prev.id) || sanitized[0]) : sanitized[0]);
-      }
+      // Filter out any locally deleted mock or removed IDs
+      const deletedIds = new Set<string>();
+      try {
+        const stored = localStorage.getItem('ulef_deleted_product_ids');
+        if (stored) {
+          (JSON.parse(stored) as string[]).forEach(id => deletedIds.add(id));
+        }
+      } catch {}
+
+      const filtered = (live || []).filter(p => !deletedIds.has(p.id));
+      const sanitized = filtered.map(sanitizeProduct);
+      setProducts(sanitized);
+      setSelectedProduct(prev => {
+        if (!prev) return sanitized[0] || null;
+        return sanitized.find(p => p.id === prev.id) || sanitized[0] || null;
+      });
     } catch (err) {
       console.warn('Live Supabase product sync warning:', err);
     } finally {
@@ -354,10 +370,24 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     reloadProductsFromSupabase();
 
-    // Subscribe to realtime postgres_changes from Supabase
-    const unsubscribe = subscribeToProductChanges(() => {
-      reloadProductsFromSupabase();
+    // Fetch live hero poster from Supabase 'site_settings'
+    fetchHeroPosterFromSupabase().then(posterUrl => {
+      if (posterUrl) {
+        setHeroBannerImageState(resolveHeroPosterUrl(posterUrl));
+      }
     });
+
+    // Subscribe to realtime postgres_changes from Supabase
+    const unsubscribe = subscribeToProductChanges(
+      () => {
+        reloadProductsFromSupabase();
+      },
+      (newPosterUrl) => {
+        if (newPosterUrl) {
+          setHeroBannerImageState(resolveHeroPosterUrl(newPosterUrl));
+        }
+      }
+    );
 
     return () => {
       unsubscribe();
@@ -701,21 +731,32 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     showToast('COD Settings Saved', 'Cash on Delivery preferences updated successfully', 'success');
   };
 
-  // Storefront Hero Poster State
-  const [heroBannerImage, setHeroBannerImageState] = useState<string>(() => {
-    return localStorage.getItem('ulef_hero_banner_image') || 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=2000&q=90';
-  });
+  // Storefront Hero Poster State (Direct Cloud Sync via Supabase site_settings - no localStorage)
+  const [heroBannerImage, setHeroBannerImageState] = useState<string>(DEFAULT_HERO_POSTER);
 
   const [heroBannerOpacity, setHeroBannerOpacityState] = useState<number>(() => {
     const saved = localStorage.getItem('ulef_hero_banner_opacity');
-    return saved ? Number(saved) : 40;
+    return saved ? Number(saved) : 50;
   });
 
   const setHeroBannerImage = (url: string) => {
-    const clean = url.trim();
-    localStorage.setItem('ulef_hero_banner_image', clean);
+    const clean = resolveHeroPosterUrl(url);
+    if (!clean) return;
+
+    try {
+      localStorage.removeItem('ulef_hero_banner_image');
+    } catch {}
+
     setHeroBannerImageState(clean);
-    showToast('Background Poster Updated', 'New homepage hero banner poster is now live!', 'success');
+    showToast('Saving to Supabase', 'Syncing hero poster directly with Supabase cloud...', 'info');
+
+    saveHeroPosterToSupabase(clean).then(res => {
+      if (res.success) {
+        showToast('Hero Poster Live', 'Homepage background poster synced to Supabase!', 'success');
+      } else {
+        showToast('Sync Notice', res.error || 'Failed to save poster to Supabase', 'error');
+      }
+    });
   };
 
   const setHeroBannerOpacity = (opacity: number) => {
@@ -897,12 +938,31 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const deleteProduct = async (id: string) => {
-    // 1. Optimistic delete
-    setProducts(prev => prev.filter(p => p.id !== id));
+    const productId = String(id);
 
-    // 2. Direct Supabase delete
-    await deleteSupabaseProduct(id);
-    showToast('Product Removed', 'Product deleted from Supabase live catalog.', 'info');
+    // 1. Immediately remove the deleted product from local React state so it vanishes with zero delay
+    setProducts(prev => prev.filter(p => String(p.id) !== String(productId)));
+    setSelectedProduct(prev => (String(prev?.id) === String(productId) ? null : prev));
+    setCart(prev => prev.filter(item => String(item.productId) !== String(productId)));
+    setWishlist(prev => prev.filter(wishId => String(wishId) !== String(productId)));
+
+    // 2. Save deleted IDs to localStorage ('ulef_deleted_product_ids') so legacy mock items never reappear on page refresh
+    try {
+      const stored = localStorage.getItem('ulef_deleted_product_ids');
+      const list: string[] = stored ? JSON.parse(stored) : [];
+      if (!list.includes(productId)) {
+        list.push(productId);
+        localStorage.setItem('ulef_deleted_product_ids', JSON.stringify(list));
+      }
+    } catch {}
+
+    // 3. Supabase Deletion: Run the deletion query quietly in the background
+    deleteSupabaseProduct(productId).catch(err => {
+      console.warn('Supabase delete background notice:', err);
+    });
+
+    // 4. Display a quick confirmation toast
+    showToast('Product Deleted', 'Product deleted successfully', 'success');
   };
 
   const addReview = (productId: string, reviewData: Omit<Review, 'id' | 'date'>) => {
