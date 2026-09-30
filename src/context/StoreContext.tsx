@@ -135,18 +135,22 @@ interface StoreContextType {
   lockAdmin: () => void;
   
   // Utilities
-  formatPrice: (amountInUSD: number) => string;
+  formatPrice: (amountInINR: number) => string;
   showToast: (title: string, message: string, type?: 'success' | 'info' | 'error') => void;
   removeToast: (id: string) => void;
 }
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
 
-const CURRENCY_RATES: Record<Currency, { symbol: string; rate: number; format: string }> = {
-  INR: { symbol: '₹', rate: 86.5, format: '₹' },
-  USD: { symbol: '$', rate: 1, format: '$' },
-  EUR: { symbol: '€', rate: 0.92, format: '€' },
-  GBP: { symbol: '£', rate: 0.79, format: '£' },
+// Base store currency is strictly INR (₹)
+// 1 USD = 85 INR (1 INR = 1 / 85 USD)
+// 1 EUR = 92 INR (1 INR = 1 / 92 EUR)
+// 1 GBP = 108 INR (1 INR = 1 / 108 GBP)
+export const CURRENCY_CONFIG: Record<Currency, { symbol: string; rateFromINR: number; label: string }> = {
+  INR: { symbol: '₹', rateFromINR: 1, label: 'INR (₹)' },
+  USD: { symbol: '$', rateFromINR: 1 / 85, label: 'USD ($)' },
+  EUR: { symbol: '€', rateFromINR: 1 / 92, label: 'EUR (€)' },
+  GBP: { symbol: '£', rateFromINR: 1 / 108, label: 'GBP (£)' },
 };
 
 export const sanitizeProduct = (p: any): Product => {
@@ -163,8 +167,8 @@ export const sanitizeProduct = (p: any): Product => {
     slug: p.slug || nameStr.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
     name: nameStr.replace(/(260|280|300|320)\s*GSM/gi, '240 GSM'),
     subtitle: (p.subtitle || '240 GSM Signature Luxury Silhouette').toString().replace(/(260|280|300|320)\s*GSM/gi, '240 GSM'),
-    price: typeof p.price === 'number' && !isNaN(p.price) ? p.price : 68,
-    originalPrice: typeof p.originalPrice === 'number' && !isNaN(p.originalPrice) ? p.originalPrice : (typeof p.price === 'number' ? Math.round(p.price * 1.25) : 85),
+    price: typeof p.price === 'number' && !isNaN(p.price) ? p.price : 1499,
+    originalPrice: typeof p.originalPrice === 'number' && !isNaN(p.originalPrice) ? p.originalPrice : (typeof p.price === 'number' ? Math.round(p.price * 1.3) : 1999),
     description: descStr.replace(/(260|280|300|320)\s*GSM/gi, '240 GSM'),
     fabricDetails: fabricStr.replace(/(260|280|300|320)\s*GSM/gi, '240 GSM'),
     gsm: 240,
@@ -489,8 +493,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const cartTotalCount = cart.reduce((sum, item) => sum + item.quantity, 0);
   const cartSubtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const cartDiscount = appliedCoupon ? (cartSubtotal * appliedCoupon.discountPercent) / 100 : 0;
-  const cartShippingFee = cartSubtotal >= 100 || cartSubtotal === 0 ? 0 : 15;
-  const cartTax = Number(((cartSubtotal - cartDiscount) * 0.08).toFixed(2));
+  // Free Express Shipping across India on orders >= ₹1,499
+  const cartShippingFee = cartSubtotal >= 1499 || cartSubtotal === 0 ? 0 : 99;
+  const cartTax = Math.round((cartSubtotal - cartDiscount) * 0.05); // 5% GST on luxury knitwear
   const cartGrandTotal = Math.max(0, cartSubtotal - cartDiscount + cartShippingFee + cartTax);
 
   // Wishlist
@@ -1113,14 +1118,19 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     showToast('Admin Locked', 'Admin panel locked and session terminated.', 'info');
   };
 
-  // Price conversion helper
-  const formatPrice = (amountInUSD: number): string => {
-    const rateInfo = CURRENCY_RATES[currency];
-    const converted = amountInUSD * rateInfo.rate;
-    if (currency === 'INR') {
-      return `${rateInfo.symbol}${Math.round(converted).toLocaleString('en-IN')}`;
+  // Price conversion helper - Base store currency is strictly INR (₹)
+  const formatPrice = (amountInINR: number): string => {
+    if (isNaN(amountInINR) || amountInINR === null || amountInINR === undefined) {
+      return currency === 'INR' ? '₹0' : '$0.00';
     }
-    return `${rateInfo.symbol}${converted.toFixed(2)}`;
+
+    if (currency === 'INR') {
+      return `₹${Math.round(amountInINR).toLocaleString('en-IN')}`;
+    }
+
+    const config = CURRENCY_CONFIG[currency] || CURRENCY_CONFIG.USD;
+    const converted = amountInINR * config.rateFromINR;
+    return `${config.symbol}${converted.toFixed(2)}`;
   };
 
   return (

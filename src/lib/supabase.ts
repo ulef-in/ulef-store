@@ -29,8 +29,8 @@ export interface SupabaseProductRow {
 
 export function mapRowToProduct(row: SupabaseProductRow): Product {
   const gsmNumber = parseInt(row.gsm?.replace(/\D/g, '') || '240') || 240;
-  const price = Number(row.price) || 68;
-  const originalPrice = row.original_price ? Number(row.original_price) : Math.round(price * 1.25);
+  const price = Number(row.price) || 1499;
+  const originalPrice = row.original_price ? Number(row.original_price) : Math.round(price * 1.3);
   const mainImage = row.image || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=1200&q=85';
   
   const images = [
@@ -165,8 +165,8 @@ export async function createSupabaseProduct(
     const payload = {
       name: productData.name,
       category: productData.category || 'Essentials',
-      price: Number(productData.price) || 68,
-      original_price: productData.originalPrice ? Number(productData.originalPrice) : Math.round((Number(productData.price) || 68) * 1.25),
+      price: Number(productData.price) || 1499,
+      original_price: productData.originalPrice ? Number(productData.originalPrice) : Math.round((Number(productData.price) || 1499) * 1.3),
       image: primaryImg,
       gsm: `${productData.gsm || 240} GSM`,
       fit: productData.fitType || 'Boxy Drop-Shoulder',

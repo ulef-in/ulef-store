@@ -47,7 +47,7 @@ export const CartDrawer: React.FC = () => {
     if (success) setCouponInput('');
   };
 
-  const freeShippingThreshold = 100;
+  const freeShippingThreshold = 1499;
   const progressToFreeShipping = Math.min(100, (cartSubtotal / freeShippingThreshold) * 100);
   const remainingForFreeShipping = Math.max(0, freeShippingThreshold - cartSubtotal);
 

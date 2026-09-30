@@ -347,8 +347,8 @@ export const AdminView: React.FC = () => {
     name: '',
     subtitle: '240 GSM Heavyweight Architectural Tee',
     description: 'Signature 240 GSM heavyweight combed cotton luxury t-shirt. Features structured boxy drape, pre-shrunk bio-wash, and durable high-density collar ribbing.',
-    price: 68,
-    originalPrice: 85,
+    price: 1499,
+    originalPrice: 2499,
     category: 'Essentials' as Product['category'],
     fitType: 'Boxy Drop-Shoulder' as Product['fitType'],
     gsm: 240,
@@ -523,8 +523,8 @@ export const AdminView: React.FC = () => {
       name: '',
       subtitle: '240 GSM Heavyweight Architectural Tee',
       description: 'Signature 240 GSM heavyweight combed cotton luxury t-shirt. Features structured boxy drape, pre-shrunk bio-wash, and durable high-density collar ribbing.',
-      price: 68,
-      originalPrice: 85,
+      price: 1499,
+      originalPrice: 2499,
       category: 'Essentials',
       fitType: 'Boxy Drop-Shoulder',
       gsm: 240,
@@ -2653,23 +2653,31 @@ export const AdminView: React.FC = () => {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-mono uppercase text-neutral-500 mb-1">Selling Price ($)</label>
+                    <label className="block text-xs font-mono uppercase text-neutral-500 mb-1">Selling Price (₹ INR)</label>
                     <input
                       type="number"
-                      value={newProduct.price}
-                      onChange={(e) => setNewProduct({ ...newProduct, price: Number(e.target.value) })}
-                      className="w-full px-4 py-2.5 rounded-xl bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 text-xs text-neutral-950 dark:text-white font-mono"
+                      placeholder="e.g. 1499"
+                      value={newProduct.price || ''}
+                      onChange={(e) => setNewProduct({ ...newProduct, price: Math.max(0, Number(e.target.value) || 0) })}
+                      className="w-full px-4 py-2.5 rounded-xl bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 text-xs text-neutral-950 dark:text-white font-mono font-bold"
                     />
+                    <span className="text-[10px] font-mono text-emerald-500 mt-1 block">
+                      Live Store Display: {formatPrice(newProduct.price)}
+                    </span>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-mono uppercase text-neutral-500 mb-1">Original MSRP ($)</label>
+                    <label className="block text-xs font-mono uppercase text-neutral-500 mb-1">Original MSRP (₹ INR)</label>
                     <input
                       type="number"
-                      value={newProduct.originalPrice}
-                      onChange={(e) => setNewProduct({ ...newProduct, originalPrice: Number(e.target.value) })}
+                      placeholder="e.g. 2499"
+                      value={newProduct.originalPrice || ''}
+                      onChange={(e) => setNewProduct({ ...newProduct, originalPrice: Math.max(0, Number(e.target.value) || 0) })}
                       className="w-full px-4 py-2.5 rounded-xl bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 text-xs text-neutral-950 dark:text-white font-mono"
                     />
+                    <span className="text-[10px] font-mono text-neutral-400 mt-1 block">
+                      Discount Base: {formatPrice(newProduct.originalPrice || 0)}
+                    </span>
                   </div>
                 </div>
 
@@ -2950,26 +2958,31 @@ export const AdminView: React.FC = () => {
 
                 <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-xs font-mono uppercase text-neutral-500 mb-1">Price (Base USD)</label>
+                    <label className="block text-xs font-mono uppercase text-neutral-500 mb-1">Selling Price (₹ INR)</label>
                     <input
                       type="number"
                       required
-                      value={editingProduct.price}
-                      onChange={(e) => setEditingProduct({ ...editingProduct, price: parseFloat(e.target.value) || 0 })}
-                      className="w-full px-4 py-2.5 rounded-xl bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 text-xs text-neutral-950 dark:text-white font-mono"
+                      placeholder="e.g. 1499"
+                      value={editingProduct.price || ''}
+                      onChange={(e) => setEditingProduct({ ...editingProduct, price: Math.max(0, parseFloat(e.target.value) || 0) })}
+                      className="w-full px-4 py-2.5 rounded-xl bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 text-xs text-neutral-950 dark:text-white font-mono font-bold"
                     />
                     <span className="text-[10px] font-mono text-emerald-500 mt-1 block">
                       Shows as: {formatPrice(editingProduct.price)}
                     </span>
                   </div>
                   <div>
-                    <label className="block text-xs font-mono uppercase text-neutral-500 mb-1">Original MSRP</label>
+                    <label className="block text-xs font-mono uppercase text-neutral-500 mb-1">Original MSRP (₹ INR)</label>
                     <input
                       type="number"
+                      placeholder="e.g. 2499"
                       value={editingProduct.originalPrice || ''}
-                      onChange={(e) => setEditingProduct({ ...editingProduct, originalPrice: parseFloat(e.target.value) || undefined })}
+                      onChange={(e) => setEditingProduct({ ...editingProduct, originalPrice: Math.max(0, parseFloat(e.target.value) || 0) })}
                       className="w-full px-4 py-2.5 rounded-xl bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 text-xs text-neutral-950 dark:text-white font-mono"
                     />
+                    <span className="text-[10px] font-mono text-neutral-400 mt-1 block">
+                      MSRP: {formatPrice(editingProduct.originalPrice || 0)}
+                    </span>
                   </div>
                   <div>
                     <label className="block text-xs font-mono uppercase text-neutral-500 mb-1">GSM Weight</label>

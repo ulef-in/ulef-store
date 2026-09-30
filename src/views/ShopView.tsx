@@ -22,7 +22,7 @@ export const ShopView: React.FC = () => {
   const [selectedSizes, setSelectedSizes] = useState<Size[]>([]);
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
   const [selectedGSM, setSelectedGSM] = useState<number | 'All'>('All');
-  const [maxPrice, setMaxPrice] = useState<number>(100);
+  const [maxPrice, setMaxPrice] = useState<number>(5000);
   const [onlyInStock, setOnlyInStock] = useState<boolean>(false);
   const [sortBy, setSortBy] = useState<'featured' | 'price-asc' | 'price-desc' | 'rating' | 'newest'>('featured');
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
@@ -276,9 +276,9 @@ export const ShopView: React.FC = () => {
             </div>
             <input
               type="range"
-              min="50"
-              max="100"
-              step="2"
+              min="500"
+              max="5000"
+              step="100"
               value={maxPrice}
               onChange={(e) => setMaxPrice(Number(e.target.value))}
               className="w-full accent-neutral-950 dark:accent-white cursor-pointer"
