@@ -32,6 +32,7 @@ export const Header: React.FC = () => {
     toggleTheme,
     currency,
     setCurrency,
+    formatPrice,
     isAdminAuthenticated
   } = useStore();
 
@@ -73,7 +74,7 @@ export const Header: React.FC = () => {
               USE CODE <span className="underline decoration-amber-400 font-bold">ULEF10</span> FOR 10% OFF
             </span>
             <span className="hidden md:inline text-neutral-500">•</span>
-            <span className="hidden md:inline text-neutral-400">FREE GLOBAL SHIPPING OVER $100</span>
+            <span className="hidden md:inline text-neutral-400">FREE GLOBAL SHIPPING OVER {formatPrice(100)}</span>
           </div>
 
           <div className="hidden lg:flex items-center gap-3">

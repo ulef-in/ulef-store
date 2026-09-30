@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Product, CartItem, Order, User, Currency, Size, ProductColor, Review, CustomerContact, CodSettings } from '../types';
-import { INITIAL_PRODUCTS, INITIAL_ORDERS } from '../data/initialProducts';
+import { INITIAL_ORDERS } from '../data/initialProducts';
 import {
   fetchSupabaseProducts,
   createSupabaseProduct,
@@ -197,47 +197,15 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return 'dark'; // default to high-end luxury dark aesthetic
   });
 
-  // Products state with resilient reload persistence
-  const [products, setProducts] = useState<Product[]>(() => {
-    // 1. Primary storage key check
-    let raw = localStorage.getItem('ulef_products');
-    
-    // 2. If primary not present, migrate from any legacy snapshot keys
-    if (!raw) {
-      raw = localStorage.getItem('ulef_products_v3') || localStorage.getItem('ulef_products_v2');
-    }
+  // Purge legacy product caches from localStorage to guarantee 100% pure Supabase data
+  try {
+    localStorage.removeItem('ulef_products');
+    localStorage.removeItem('ulef_products_v2');
+    localStorage.removeItem('ulef_products_v3');
+  } catch {}
 
-    // 3. Immediately purge legacy keys so outdated snapshots never shadow fresh products on reload
-    try {
-      localStorage.removeItem('ulef_products_v3');
-      localStorage.removeItem('ulef_products_v2');
-    } catch {}
-
-    if (raw) {
-      try {
-        const parsed: any[] = JSON.parse(raw);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          const sanitized = parsed.map(sanitizeProduct);
-          // Persist sanitized catalog back to primary key
-          try {
-            localStorage.setItem('ulef_products', JSON.stringify(sanitized));
-          } catch (storageErr) {
-            console.warn('Initial storage save warning:', storageErr);
-          }
-          return sanitized;
-        }
-      } catch (err) {
-        console.error('Failed to parse saved products:', err);
-      }
-    }
-
-    // Default catalog fallback
-    const initialSanitized = INITIAL_PRODUCTS.map(sanitizeProduct);
-    try {
-      localStorage.setItem('ulef_products', JSON.stringify(initialSanitized));
-    } catch {}
-    return initialSanitized;
-  });
+  // Products state: Direct Real-Time Supabase Cloud Sync (replaces initialProducts & localStorage)
+  const [products, setProducts] = useState<Product[]>([]);
 
   // Cart state
   const [cart, setCart] = useState<CartItem[]>(() => {
@@ -339,7 +307,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // Navigation & Modals
   const [activeView, setActiveView] = useState<ViewType>('home');
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(INITIAL_PRODUCTS[0]);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
@@ -347,7 +315,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false);
   const [isSupportChatOpen, setIsSupportChatOpen] = useState(false);
   const [currency, setCurrency] = useState<Currency>(() => {
-    const saved = localStorage.getItem('ulef_currency_v2');
+    const saved = localStorage.getItem('ulef_currency_v3');
     if (saved === 'INR' || saved === 'USD' || saved === 'EUR' || saved === 'GBP') {
       return saved as Currency;
     }
@@ -356,7 +324,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   useEffect(() => {
     try {
-      localStorage.setItem('ulef_currency_v2', currency);
+      localStorage.setItem('ulef_currency_v3', currency);
     } catch {}
   }, [currency]);
 
@@ -368,10 +336,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     try {
       const live = await fetchSupabaseProducts();
       if (live && live.length > 0) {
-        setProducts(live.map(sanitizeProduct));
-        try {
-          localStorage.setItem('ulef_products', JSON.stringify(live));
-        } catch {}
+        const sanitized = live.map(sanitizeProduct);
+        setProducts(sanitized);
+        setSelectedProduct(prev => prev ? (sanitized.find(p => p.id === prev.id) || sanitized[0]) : sanitized[0]);
       }
     } catch (err) {
       console.warn('Live Supabase product sync warning:', err);
@@ -413,24 +380,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       document.documentElement.style.colorScheme = 'light';
     }
   }, [theme]);
-
-  // Sync state to local storage
-  useEffect(() => {
-    try {
-      localStorage.setItem('ulef_products', JSON.stringify(products));
-    } catch (storageErr) {
-      console.warn('Could not sync products in useEffect, attempting payload optimization', storageErr);
-      try {
-        const optimized = products.map(p => ({
-          ...p,
-          images: p.images.map(img => img.startsWith('data:') && img.length > 50000 ? img.slice(0, 50000) : img)
-        }));
-        localStorage.setItem('ulef_products', JSON.stringify(optimized));
-      } catch (innerErr) {
-        console.error('Local storage full, products kept in memory:', innerErr);
-      }
-    }
-  }, [products]);
 
   useEffect(() => {
     localStorage.setItem('ulef_cart', JSON.stringify(cart));
@@ -914,11 +863,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     setProducts(prev => {
       const filtered = prev.filter(p => p.id !== createdProduct.id);
-      const updated = [createdProduct, ...filtered];
-      try {
-        localStorage.setItem('ulef_products', JSON.stringify(updated));
-      } catch {}
-      return updated;
+      return [createdProduct, ...filtered];
     });
 
     showToast('Product Live on Supabase', `"${createdProduct.name}" is now live for all visitors!`, 'success');
@@ -936,13 +881,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
 
     // 1. Optimistic local update
-    setProducts(prev => {
-      const next = prev.map(p => (p.id === id ? sanitizeProduct({ ...p, ...updated }) : p));
-      try {
-        localStorage.setItem('ulef_products', JSON.stringify(next));
-      } catch {}
-      return next;
-    });
+    setProducts(prev => prev.map(p => (p.id === id ? sanitizeProduct({ ...p, ...updated }) : p)));
     if (selectedProduct && selectedProduct.id === id) {
       setSelectedProduct(prev => (prev ? sanitizeProduct({ ...prev, ...updated }) : null));
     }
@@ -954,13 +893,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const deleteProduct = async (id: string) => {
     // 1. Optimistic delete
-    setProducts(prev => {
-      const next = prev.filter(p => p.id !== id);
-      try {
-        localStorage.setItem('ulef_products', JSON.stringify(next));
-      } catch {}
-      return next;
-    });
+    setProducts(prev => prev.filter(p => p.id !== id));
 
     // 2. Direct Supabase delete
     await deleteSupabaseProduct(id);
