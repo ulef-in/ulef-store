@@ -29,6 +29,9 @@ export const HeroBanner: React.FC = () => {
           <img
             src={currentPoster}
             alt="ULEF.IN Atelier Brand Poster"
+            loading="eager"
+            decoding="async"
+            {...{ fetchpriority: 'high' }}
             referrerPolicy="no-referrer"
             onError={() => setImageError(true)}
             style={{

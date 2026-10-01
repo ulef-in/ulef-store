@@ -264,9 +264,9 @@ export const HomeView: React.FC = () => {
                 <Star key={i} className="w-4 h-4 fill-amber-400" />
               ))}
             </div>
-            <h4 className="text-sm font-bold font-display text-neutral-950 dark:text-white">
-              "Finally a collar that doesn't stretch out"
-            </h4>
+            <p className="text-sm font-bold font-display text-neutral-950 dark:text-white">
+              Finally a collar that doesn't stretch out
+            </p>
             <p className="text-xs text-neutral-600 dark:text-neutral-400 leading-relaxed">
               "I own 10+ oversized tees from various luxury brands. ULEF.IN is the only one where the 1.25" collar stays completely flat and tight even after 15 washes. Pure 240 GSM magic."
             </p>
@@ -282,9 +282,9 @@ export const HomeView: React.FC = () => {
                 <Star key={i} className="w-4 h-4 fill-amber-400" />
               ))}
             </div>
-            <h4 className="text-sm font-bold font-display text-neutral-950 dark:text-white">
+            <p className="text-sm font-bold font-display text-neutral-950 dark:text-white">
               "Heavyweight structure is unmatched"
-            </h4>
+            </p>
             <p className="text-xs text-neutral-600 dark:text-neutral-400 leading-relaxed">
               "The 240 GSM French Terry Graphic tee feels like armor yet remains breathable. The drop shoulder break hits exactly at the upper arm for that boxy silhouette."
             </p>
@@ -300,9 +300,9 @@ export const HomeView: React.FC = () => {
                 <Star key={i} className="w-4 h-4 fill-amber-400" />
               ))}
             </div>
-            <h4 className="text-sm font-bold font-display text-neutral-950 dark:text-white">
+            <p className="text-sm font-bold font-display text-neutral-950 dark:text-white">
               "Chalk white is completely zero-sheer"
-            </h4>
+            </p>
             <p className="text-xs text-neutral-600 dark:text-neutral-400 leading-relaxed">
               "Finding a white tee that isn't see-through is almost impossible. The Chalk White 240 GSM has zero transparency and pairs effortlessly with dark trousers."
             </p>

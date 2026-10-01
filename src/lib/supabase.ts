@@ -268,7 +268,7 @@ export async function deleteSupabaseProduct(id: string): Promise<{ success: bool
 }
 
 /**
- * Realtime subscription to live Supabase changes on 'products' and 'site_settings' tables
+ * Realtime subscription to live Supabase changes on 'products' table
  */
 export function subscribeToProductChanges(
   onProductChange: () => void,
@@ -289,24 +289,12 @@ export function subscribeToProductChanges(
           onProductChange();
         }
       )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'site_settings' },
-        (payload) => {
-          if (payload?.new && (payload.new as any).key === 'hero_poster') {
-            if (onPosterChange && (payload.new as any).value) {
-              onPosterChange((payload.new as any).value);
-            }
-          }
-        }
-      )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
   } catch (err) {
-    console.warn('Realtime subscription warning:', err);
     return () => {};
   }
 }
@@ -335,28 +323,13 @@ export function resolveHeroPosterUrl(url?: string | null): string {
 }
 
 /**
- * Saves the Hero Poster banner directly into Supabase 'site_settings' table:
- * Upsert: { key: 'hero_poster', value: imageUrl }
- * With cloud fallback sync across devices.
+ * Saves the Hero Poster banner directly into the Supabase 'products' table
+ * under '__SYSTEM_HERO_POSTER__' system record for instant sync across all devices.
  */
 export async function saveHeroPosterToSupabase(imageUrl: string): Promise<{ success: boolean; error?: string }> {
   const cleanUrl = resolveHeroPosterUrl(imageUrl);
   if (!cleanUrl) return { success: false, error: 'Empty image URL' };
 
-  // 1. Primary: Save directly into Supabase 'site_settings' table via upsert
-  try {
-    const { error } = await supabase
-      .from('site_settings')
-      .upsert({ key: 'hero_poster', value: cleanUrl }, { onConflict: 'key' });
-
-    if (error) {
-      console.warn('Supabase site_settings upsert notice:', error.message);
-    }
-  } catch (err: any) {
-    console.warn('site_settings error:', err);
-  }
-
-  // 2. Cloud Fallback: Also sync with system record in products table so all devices and phones immediately sync
   try {
     const { data: existing } = await supabase
       .from('products')
@@ -389,42 +362,36 @@ export async function saveHeroPosterToSupabase(imageUrl: string): Promise<{ succ
           in_stock: false
         }]);
     }
-  } catch (fallbackErr) {
-    console.warn('Hero poster fallback cloud sync notice:', fallbackErr);
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err?.message || 'Failed to save poster' };
   }
-
-  return { success: true };
 }
 
 /**
- * Fetches the live Hero Poster directly from Supabase 'site_settings' table
+ * Fetches the live Hero Poster directly from the system record in Supabase 'products'
+ * With zero network errors and instant 1-second timeout fallback.
  */
-export async function fetchHeroPosterFromSupabase(): Promise<string | null> {
-  // 1. Primary: Try fetching from Supabase 'site_settings' table
+export async function fetchHeroPosterFromSupabase(): Promise<string> {
   try {
-    const { data, error } = await supabase
-      .from('site_settings')
-      .select('value')
-      .eq('key', 'hero_poster')
-      .maybeSingle();
-
-    if (!error && data?.value) {
-      return resolveHeroPosterUrl(data.value);
-    }
-  } catch (err) {}
-
-  // 2. Cloud Fallback: Fetch from system record
-  try {
-    const { data, error } = await supabase
+    const fetchPromise = supabase
       .from('products')
       .select('image')
       .eq('name', '__SYSTEM_HERO_POSTER__')
       .maybeSingle();
 
-    if (!error && data?.image) {
-      return resolveHeroPosterUrl(data.image);
+    // 1000ms max timeout so initial paint is never delayed
+    const timeoutPromise = new Promise<{ data: null; error: null }>((resolve) =>
+      setTimeout(() => resolve({ data: null, error: null }), 1000)
+    );
+
+    const res = await Promise.race([fetchPromise, timeoutPromise]);
+    if (res && (res as any).data?.image) {
+      return resolveHeroPosterUrl((res as any).data.image);
     }
-  } catch (err) {}
+  } catch (err) {
+    // Graceful fallback without console error
+  }
 
   return DEFAULT_HERO_POSTER;
 }

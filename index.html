@@ -2,9 +2,14 @@
 <html lang="en" class="overflow-x-hidden max-w-[100vw] w-full">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ULEF.IN — Heavyweight Oversized Essentials</title>
     <meta name="description" content="ULEF.IN Luxury Oversized Apparel. Minimalist, drop-shoulder heavy 240-320 GSM cotton t-shirts crafted for modern luxury." />
+    
+    <!-- Preload LCP Hero Banner directly for instant first HTML stream paint -->
+    <link rel="preconnect" href="https://i.ibb.co" crossorigin />
+    <link rel="preload" as="image" href="https://i.ibb.co/ZRzv3tJF/1790769035371.png" fetchpriority="high" />
+
     <script>
       (function() {
         try {
@@ -19,13 +24,17 @@
         } catch(e) {}
       })();
     </script>
+
+    <!-- Asynchronously load non-critical Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Syne:wght@400;600;700;800&family=Italiana&display=swap" rel="stylesheet">
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Syne:wght@400;600;700;800&family=Italiana&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript>
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Syne:wght@400;600;700;800&family=Italiana&display=swap">
+    </noscript>
   </head>
   <body class="bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100 antialiased selection:bg-neutral-900 selection:text-white dark:selection:bg-neutral-100 dark:selection:text-neutral-900 transition-colors duration-300 overflow-x-hidden max-w-[100vw] w-full">
     <div id="root" class="overflow-x-hidden max-w-[100vw] w-full min-h-screen"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
-

@@ -642,9 +642,9 @@ export const ProductDetailView: React.FC = () => {
                   <span className="text-[11px] font-mono text-neutral-400">{rev.date}</span>
                 </div>
 
-                <h4 className="text-sm font-bold font-display text-neutral-950 dark:text-white">
+                <p className="text-sm font-bold font-display text-neutral-950 dark:text-white">
                   "{rev.title}"
-                </h4>
+                </p>
                 <p className="text-xs text-neutral-600 dark:text-neutral-400 leading-relaxed">
                   {rev.comment}
                 </p>
