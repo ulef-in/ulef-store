@@ -277,7 +277,7 @@ export const CartView: React.FC = () => {
 
             <div className="flex items-center justify-center gap-2 text-[10px] font-mono text-neutral-500">
               <ShieldCheck className="w-4 h-4 text-emerald-400" />
-              <span>256-Bit SSL Encrypted • 14-Day Free Global Returns</span>
+              <span>256-Bit SSL Encrypted • 7-Day Easy Returns</span>
             </div>
           </div>
         </div>

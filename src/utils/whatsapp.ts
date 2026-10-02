@@ -3,7 +3,7 @@ import { Order, CartItem, Product } from '../types';
 // Merchant WhatsApp Number & Support Email
 export const DEFAULT_MERCHANT_WHATSAPP = '919316614778';
 export const MERCHANT_DISPLAY_PHONE = '+91 93166 14778';
-export const SUPPORT_EMAIL = 'ulef.in0@gmail.com';
+export const SUPPORT_EMAIL = 'ulef.in@gmail.com';
 
 export function getMerchantWhatsAppPhone(): string {
   try {

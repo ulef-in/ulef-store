@@ -30,7 +30,7 @@ export const ContactView: React.FC = () => {
   const [clientName, setClientName] = useState('');
   const [clientEmail, setClientEmail] = useState('');
   const [clientPhone, setClientPhone] = useState('');
-  const [studioLocation, setStudioLocation] = useState('Tokyo Atelier Lab');
+  const [studioLocation, setStudioLocation] = useState('ULEF Atelier & Dispatch Lab (Modasa, Gujarat)');
   const [serviceType, setServiceType] = useState('Heavyweight Silhouette Fitting & Sizing (240 GSM)');
   const [appointmentDate, setAppointmentDate] = useState(() => {
     const d = new Date();
@@ -58,7 +58,7 @@ export const ContactView: React.FC = () => {
       a: 'During your 60-minute private appointment, an atelier specialist will walk you through our 240 GSM compact cotton cuts, test bespoke boxy silhouettes against your body proportions, and provide styling combinations with Drop 04 lookbook garments.'
     },
     {
-      q: 'Can I book a Virtual Fitting consultation if I am outside Tokyo/Berlin/NYC?',
+      q: 'Can I book a Virtual Fitting consultation?',
       a: 'Yes. Our Virtual 1-on-1 Bespoke Fit Video Consultation lets you connect live with our master patternmaker to evaluate drape, shoulder drop measurements, and collar proportions before placing an order.'
     },
     {
@@ -70,8 +70,8 @@ export const ContactView: React.FC = () => {
       a: 'No. All ULEF.IN heavyweight fabrics undergo high-temp pre-shrinking and bio-polishing. As long as you wash cold (30°C) and hang dry or tumble dry low, shrinkage is guaranteed under 1%.'
     },
     {
-      q: 'What is your international delivery & returns timeline?',
-      a: 'We ship worldwide via DHL Express. US & EU orders arrive in 2–4 business days. We offer a 14-day hassle-free exchange and return window with prepaid return labels.'
+      q: 'What is your delivery & return policy timeline?',
+      a: 'We ship nationwide and worldwide via express priority courier. Orders arrive in 2–4 business days. We offer a 7-day hassle-free size exchange and return policy from the date of delivery.'
     }
   ];
 
@@ -302,10 +302,12 @@ export const ContactView: React.FC = () => {
                         onChange={(e) => setStudioLocation(e.target.value)}
                         className="w-full px-4 py-2.5 rounded-xl bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 text-xs text-neutral-950 dark:text-white font-mono"
                       >
-                        <option value="Tokyo Atelier Lab">Tokyo Atelier Lab (Minato-ku, Aoyama)</option>
-                        <option value="Berlin Design Studio">Berlin Design Studio (Kreuzberg)</option>
-                        <option value="New York Showroom">New York Showroom (Soho, Broome St)</option>
-                        <option value="Virtual Bespoke Fitting">Virtual 1-on-1 Fit Consultation (Video)</option>
+                        <option value="ULEF Atelier & Dispatch Lab (Modasa, Gujarat)">
+                          ULEF Atelier & Dispatch Lab (Modasa, Gujarat)
+                        </option>
+                        <option value="Virtual Bespoke Fitting">
+                          Virtual 1-on-1 Fit Consultation (Video)
+                        </option>
                       </select>
                     </div>
                   </div>
@@ -526,64 +528,60 @@ export const ContactView: React.FC = () => {
           </div>
 
           <div className="p-6 sm:p-8 rounded-3xl bg-neutral-950 text-white border border-neutral-800 shadow-xl space-y-6">
-            <h3 className="text-base font-bold font-display uppercase tracking-wider text-white pb-4 border-b border-neutral-800">
-              GLOBAL ATELIER STUDIOS
-            </h3>
+            <div className="pb-4 border-b border-neutral-800 space-y-1">
+              <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-amber-400 font-bold block">
+                OFFICIAL DESIGN & FULFILLMENT HUB
+              </span>
+              <h3 className="text-lg sm:text-xl font-black font-display uppercase tracking-tight text-white">
+                ULEF ATELIER & DISPATCH LAB
+              </h3>
+            </div>
 
             <div className="space-y-4 font-mono text-xs text-neutral-300">
-              <div className="flex items-start gap-3">
-                <MapPin className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-                <div>
-                  <strong className="text-white block font-display">TOKYO ATELIER LAB</strong>
-                  <span>5-7-22 Minami-Aoyama, Minato-ku, Tokyo 107-0062, Japan</span>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <MapPin className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-                <div>
-                  <strong className="text-white block font-display">BERLIN DESIGN STUDIO</strong>
-                  <span>Oranienstraße 185, 10999 Berlin, Germany</span>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <MapPin className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-                <div>
-                  <strong className="text-white block font-display">NEW YORK SHOWROOM</strong>
-                  <span>482 Broome Street, Soho, New York, NY 10013, USA</span>
+              <div className="flex items-start gap-3 p-4 rounded-2xl bg-neutral-900/60 border border-neutral-800">
+                <MapPin className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <span className="text-[10px] uppercase tracking-wider text-neutral-400 font-bold block">
+                    HEADQUARTERS & DISPATCH ADDRESS
+                  </span>
+                  <strong className="text-white text-sm font-display block">
+                    Modasa, Aravalli District, Gujarat — 383315, India
+                  </strong>
+                  <p className="text-[11px] text-neutral-400 font-light leading-relaxed">
+                    Official design studio and primary dispatch hub for all ULEF.IN luxury heavyweight oversized garments.
+                  </p>
                 </div>
               </div>
             </div>
 
-            <div className="pt-4 border-t border-neutral-800 space-y-3 font-mono text-xs">
+            <div className="pt-2 border-t border-neutral-800 space-y-3 font-mono text-xs">
               <div className="space-y-1">
-                <span className="text-[10px] text-neutral-500 uppercase tracking-wider block">Official Customer Support Email</span>
+                <span className="text-[10px] text-neutral-500 uppercase tracking-wider block">Customer Care Email</span>
                 <a
                   href={`mailto:${SUPPORT_EMAIL}`}
                   className="flex items-center gap-2 text-amber-400 hover:text-amber-300 font-bold transition-colors"
                 >
-                  <Mail className="w-4 h-4 text-amber-400" />
+                  <Mail className="w-4 h-4 text-amber-400 shrink-0" />
                   <span>{SUPPORT_EMAIL}</span>
                 </a>
               </div>
 
               <div className="space-y-1 pt-1">
-                <span className="text-[10px] text-neutral-500 uppercase tracking-wider block">Official Order & Inquiry WhatsApp</span>
+                <span className="text-[10px] text-neutral-500 uppercase tracking-wider block">Direct WhatsApp Concierge</span>
                 <a
                   href={getSupportWhatsAppUrl('Atelier Contact Page')}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs uppercase tracking-wider transition-all shadow-md cursor-pointer w-full justify-center"
+                  className="inline-flex items-center gap-2 px-4 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs uppercase tracking-wider transition-all shadow-md cursor-pointer w-full justify-center"
                 >
-                  <MessageCircle className="w-4 h-4 fill-white" />
+                  <MessageCircle className="w-4 h-4 fill-white shrink-0" />
                   <span>WhatsApp: {MERCHANT_DISPLAY_PHONE}</span>
                 </a>
               </div>
 
-              <div className="flex items-center gap-2 text-neutral-400 pt-1 text-[11px]">
-                <Clock className="w-3.5 h-3.5 text-neutral-400" />
-                <span>Mon – Sun: 24/7 Digital Concierge Desk</span>
+              <div className="flex items-center gap-2 text-neutral-400 pt-2 text-[11px]">
+                <Clock className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
+                <span>Mon – Sat: 10:00 AM – 8:00 PM IST (Active Dispatch)</span>
               </div>
             </div>
           </div>

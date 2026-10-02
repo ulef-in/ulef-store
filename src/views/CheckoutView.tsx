@@ -710,7 +710,7 @@ export const CheckoutView: React.FC = () => {
 
             <div className="flex items-center justify-center gap-2 text-[10px] font-mono text-neutral-500">
               <ShieldCheck className="w-4 h-4 text-emerald-400" />
-              <span>Complimentary 14-Day Exchanges & Returns</span>
+              <span>Complimentary 7-Day Easy Exchanges & Returns</span>
             </div>
           </div>
         </div>

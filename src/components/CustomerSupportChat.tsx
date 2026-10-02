@@ -65,9 +65,9 @@ export const CustomerSupportChat: React.FC = () => {
       } else if (lower.includes('wash') || lower.includes('care') || lower.includes('collar')) {
         botReply = 'ULEF.IN tees are pre-shrunk. For maximum lifespan: machine wash cold (30°C / 85°F) inside out with mild detergent. Hang dry or lay flat. Avoid high-heat tumble drying. Our 1.25" double-ribbed collars feature elastane memory retention.';
       } else if (lower.includes('return') || lower.includes('exchange')) {
-        botReply = `We offer complimentary 14-day global exchanges and returns on unworn items with original tags and presentation packaging. Visit our Orders Tracker, chat on WhatsApp (${MERCHANT_DISPLAY_PHONE}), or email ${SUPPORT_EMAIL} to generate a prepaid return label.`;
+        botReply = `We offer complimentary 7-day easy exchanges and returns on unworn items with original tags and presentation packaging. Visit our Orders Tracker, chat on WhatsApp (${MERCHANT_DISPLAY_PHONE}), or email ${SUPPORT_EMAIL} to generate a return pickup.`;
       } else {
-        botReply = 'Thank you for contacting ULEF.IN Concierge. Our atelier team in Tokyo & Berlin crafts each piece in limited heavyweight runs. Let me know if you need specific styling combinations, lookbook references, or express checkout assistance!';
+        botReply = 'Thank you for contacting ULEF.IN Concierge. Our atelier and dispatch team in Gujarat crafts each piece in limited heavyweight runs. Let me know if you need specific styling combinations, lookbook references, or express checkout assistance!';
       }
 
       const botMsg: ChatMessage = {

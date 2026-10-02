@@ -423,7 +423,7 @@ export const ProductDetailView: React.FC = () => {
             </div>
             <div className="flex items-center gap-2">
               <RotateCcw className="w-4 h-4 text-amber-500" />
-              <span>14-Day Free Exchanges</span>
+              <span>7-Day Easy Returns</span>
             </div>
           </div>
 

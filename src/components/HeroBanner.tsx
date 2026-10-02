@@ -153,7 +153,7 @@ export const HeroBanner: React.FC = () => {
           <span className="text-amber-400">•</span>
           <span>DROP 04 NOW LIVE</span>
           <span className="text-amber-400">•</span>
-          <span>FREE GLOBAL RETURNS</span>
+          <span>7-DAY EASY RETURNS</span>
           <span className="text-amber-400">•</span>
           <span>ULEF.IN ATELIER</span>
           <span className="text-amber-400">•</span>
@@ -165,7 +165,7 @@ export const HeroBanner: React.FC = () => {
           <span className="text-amber-400">•</span>
           <span>DROP 04 NOW LIVE</span>
           <span className="text-amber-400">•</span>
-          <span>FREE GLOBAL RETURNS</span>
+          <span>7-DAY EASY RETURNS</span>
           <span className="text-amber-400">•</span>
         </div>
       </div>

@@ -82,10 +82,10 @@ export const Footer: React.FC = () => {
             </div>
             <div>
               <h4 className="text-xs font-bold font-display uppercase tracking-wider text-white">
-                14-DAY EASY RETURNS
+                7-DAY EASY RETURNS
               </h4>
               <p className="text-xs text-neutral-400 mt-0.5 leading-relaxed">
-                Hassle-free size swaps and complimentary returns.
+                Hassle-free size exchange and returns within 7 days of delivery.
               </p>
             </div>
           </div>
@@ -164,6 +164,11 @@ export const Footer: React.FC = () => {
               <div className="flex items-center gap-1.5 text-[11px] text-neutral-500 pt-1">
                 <Clock className="w-3 h-3" />
                 <span>24/7 Digital Concierge Desk</span>
+              </div>
+
+              <div className="pt-2 border-t border-neutral-800 text-[11px] text-neutral-400 space-y-0.5">
+                <span className="text-[10px] text-neutral-500 uppercase tracking-wider block font-bold">Atelier & Dispatch Hub</span>
+                <span className="text-white block">Modasa, Aravalli District, Gujarat — 383315, India</span>
               </div>
             </div>
           </div>
