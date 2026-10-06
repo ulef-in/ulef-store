@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { useStore } from '../context/StoreContext';
 import { Size, ProductColor, Product } from '../types';
 import { ProductCard } from '../components/ProductCard';
+import { ProductImageLightbox } from '../components/ProductImageLightbox';
 import {
   Star,
   Ruler,
@@ -20,7 +21,8 @@ import {
   CheckCircle2,
   MessageSquarePlus,
   ZoomIn,
-  MessageCircle
+  MessageCircle,
+  ArrowRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { sendToWhatsApp, getWhatsAppUrl, generateProductWhatsAppMessage } from '../utils/whatsapp';
@@ -68,6 +70,7 @@ export const ProductDetailView: React.FC = () => {
   const [quantity, setQuantity] = useState(1);
   const [isZoomed, setIsZoomed] = useState(false);
   const [zoomPos, setZoomPos] = useState({ x: 0, y: 0 });
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
 
   // Accordion state
   const [openAccordion, setOpenAccordion] = useState<string | null>('fabric');
@@ -174,19 +177,20 @@ export const ProductDetailView: React.FC = () => {
             </div>
           )}
 
-          {/* Main Stage with Magnification Lens */}
+          {/* Main Stage with Magnification Lens & Click-to-Zoom Lightbox */}
           <div
+            onClick={() => setIsLightboxOpen(true)}
             onMouseEnter={() => setIsZoomed(true)}
             onMouseLeave={() => setIsZoomed(false)}
             onMouseMove={handleMouseMove}
-            className="relative flex-1 aspect-[3/4] rounded-2xl overflow-hidden bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 cursor-crosshair group"
+            className="relative flex-1 aspect-[3/4] rounded-2xl overflow-hidden bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 cursor-zoom-in group select-none shadow-md"
           >
             <img
               src={currentImages[activeImageIndex] || currentImages[0]}
               alt={product.name}
               referrerPolicy="no-referrer"
               className={`w-full h-full object-cover object-center transition-transform duration-200 ${
-                isZoomed ? 'scale-150' : 'scale-100'
+                isZoomed ? 'scale-110' : 'scale-100'
               }`}
               style={
                 isZoomed
@@ -207,8 +211,11 @@ export const ProductDetailView: React.FC = () => {
               </span>
             </div>
 
-            <div className="absolute bottom-4 right-4 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity bg-neutral-950/80 text-white px-2.5 py-1 rounded-lg text-[11px] font-mono flex items-center gap-1.5 backdrop-blur-md">
-              <ZoomIn className="w-3.5 h-3.5" /> Hover To Inspect Weave
+            {/* Subtle Helper Badge */}
+            <div className="absolute bottom-4 right-4 bg-neutral-950/85 text-white px-3 py-1.5 rounded-full text-[11px] font-mono flex items-center gap-1.5 backdrop-blur-md border border-white/10 shadow-lg group-hover:scale-105 transition-all">
+              <ZoomIn className="w-3.5 h-3.5 text-amber-400" />
+              <span className="hidden sm:inline">Click to inspect fabric details</span>
+              <span className="sm:hidden">Tap to inspect fabric details</span>
             </div>
           </div>
         </div>
@@ -296,8 +303,9 @@ export const ProductDetailView: React.FC = () => {
             <div className="flex items-center justify-between text-xs font-mono">
               <span className="text-neutral-500 uppercase">Select Size:</span>
               <button
+                type="button"
                 onClick={() => setIsSizeGuideOpen(true)}
-                className="text-neutral-950 dark:text-white underline font-bold flex items-center gap-1 hover:opacity-80 transition-opacity"
+                className="text-neutral-950 dark:text-white underline font-bold flex items-center gap-1 hover:opacity-80 transition-opacity cursor-pointer"
               >
                 <Ruler className="w-3.5 h-3.5" /> Size Matrix Guide
               </button>
@@ -685,6 +693,17 @@ export const ProductDetailView: React.FC = () => {
           ))}
         </div>
       </section>
+
+      {/* Interactive Fullscreen Lightbox Modal */}
+      <ProductImageLightbox
+        isOpen={isLightboxOpen}
+        onClose={() => setIsLightboxOpen(false)}
+        images={currentImages}
+        initialIndex={activeImageIndex}
+        productName={product.name}
+        gsm={product.gsm}
+        subtitle={product.subtitle}
+      />
     </div>
   );
 };

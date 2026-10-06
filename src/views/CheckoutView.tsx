@@ -17,10 +17,19 @@ import {
   Copy,
   Check,
   ExternalLink,
-  MapPin
+  MapPin,
+  AlertCircle
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { sendToWhatsApp, generateOrderWhatsAppMessage, getMerchantWhatsAppPhone, MERCHANT_DISPLAY_PHONE } from '../utils/whatsapp';
+
+// Strict Validation Patterns
+const INDIAN_MOBILE_REGEX = /^[6-9]\d{9}$/;
+const INDIAN_PINCODE_REGEX = /^[1-9][0-9]{5}$/;
+const NAME_REGEX = /^[a-zA-Z\s]{3,}$/;
+const LAST_NAME_REGEX = /^[a-zA-Z\s]*$/;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const CITY_STATE_REGEX = /^[a-zA-Z\s.-]{3,}$/;
 
 export const CheckoutView: React.FC = () => {
   const {
@@ -67,6 +76,71 @@ export const CheckoutView: React.FC = () => {
   const [upiUtr, setUpiUtr] = useState('');
   const [copiedUpi, setCopiedUpi] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
+
+  // Field-level error calculator
+  const getFieldError = (field: keyof ShippingAddress): string => {
+    const val = (formData[field] || '').trim();
+    switch (field) {
+      case 'firstName':
+        if (!val) return 'First Name is required.';
+        if (!NAME_REGEX.test(val)) return 'Full Name must be at least 3 characters (letters and spaces only).';
+        return '';
+      case 'lastName':
+        if (val && !LAST_NAME_REGEX.test(val)) return 'Last name can only contain letters and spaces.';
+        return '';
+      case 'email':
+        if (!val) return 'Email address is required.';
+        if (!EMAIL_REGEX.test(val)) return 'Please enter a valid email address.';
+        return '';
+      case 'phone':
+        if (!val) return 'Mobile number is required.';
+        if (!INDIAN_MOBILE_REGEX.test(val.replace(/\s+/g, ''))) {
+          return 'Please enter a valid 10-digit Indian mobile number.';
+        }
+        return '';
+      case 'addressLine1':
+        if (!val) return 'Street address is required.';
+        if (val.length < 10) return 'Please enter a complete street address (minimum 10 characters required).';
+        return '';
+      case 'city':
+        if (!val) return 'City is required.';
+        if (!CITY_STATE_REGEX.test(val)) return 'City must be at least 3 characters (letters only).';
+        return '';
+      case 'state':
+        if (!val) return 'State is required.';
+        if (!CITY_STATE_REGEX.test(val)) return 'State must be at least 3 characters (letters only).';
+        return '';
+      case 'postalCode':
+        if (!val) return 'PIN code is required.';
+        if (!INDIAN_PINCODE_REGEX.test(val.replace(/\s+/g, ''))) {
+          return 'Please enter a valid 6-digit Indian PIN code (cannot start with 0).';
+        }
+        return '';
+      default:
+        return '';
+    }
+  };
+
+  const isFirstNameValid = getFieldError('firstName') === '';
+  const isLastNameValid = getFieldError('lastName') === '';
+  const isEmailValid = getFieldError('email') === '';
+  const isPhoneValid = getFieldError('phone') === '';
+  const isAddressValid = getFieldError('addressLine1') === '';
+  const isCityValid = getFieldError('city') === '';
+  const isStateValid = getFieldError('state') === '';
+  const isPostalCodeValid = getFieldError('postalCode') === '';
+
+  const isFormValid =
+    isFirstNameValid &&
+    isLastNameValid &&
+    isEmailValid &&
+    isPhoneValid &&
+    isAddressValid &&
+    isCityValid &&
+    isStateValid &&
+    isPostalCodeValid;
 
   // Active Merchant UPI & COD values
   const activeUpiId = merchantUpiId || 'ulef.luxury@okhdfcbank';
@@ -111,6 +185,22 @@ export const CheckoutView: React.FC = () => {
 
   const handlePlaceOrder = (e: React.FormEvent) => {
     e.preventDefault();
+    setHasAttemptedSubmit(true);
+
+    if (!isFormValid) {
+      setTouched({
+        firstName: true,
+        lastName: true,
+        email: true,
+        phone: true,
+        addressLine1: true,
+        city: true,
+        state: true,
+        postalCode: true
+      });
+      return;
+    }
+
     setIsProcessing(true);
 
     // Trigger celebration confetti
@@ -187,98 +277,303 @@ export const CheckoutView: React.FC = () => {
             </h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* First Name / Full Name */}
               <div>
-                <label className="block text-xs font-mono uppercase text-neutral-500 mb-1">First Name (Naam)</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-mono uppercase text-neutral-500">
+                    Full Name (Naam) <span className="text-red-500">*</span>
+                  </label>
+                  {(touched.firstName || hasAttemptedSubmit) && isFirstNameValid && (
+                    <span className="text-[10px] font-mono text-emerald-500 flex items-center gap-0.5 font-bold">
+                      <Check className="w-3 h-3" /> Valid
+                    </span>
+                  )}
+                </div>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Rahul"
+                  placeholder="e.g. Rahul Sharma"
                   value={formData.firstName}
-                  onChange={(e) => handleInputChange('firstName', e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 text-xs text-neutral-950 dark:text-white focus:outline-none focus:border-neutral-500"
+                  onChange={(e) => {
+                    handleInputChange('firstName', e.target.value);
+                    setTouched(prev => ({ ...prev, firstName: true }));
+                  }}
+                  onBlur={() => setTouched(prev => ({ ...prev, firstName: true }))}
+                  className={`w-full px-4 py-2.5 rounded-xl bg-neutral-50 dark:bg-neutral-950 border text-xs text-neutral-950 dark:text-white focus:outline-none transition-colors ${
+                    (touched.firstName || hasAttemptedSubmit) && !isFirstNameValid
+                      ? 'border-red-500 focus:border-red-500 ring-1 ring-red-500/20'
+                      : 'border-neutral-200 dark:border-neutral-800 focus:border-neutral-500'
+                  }`}
                 />
+                {(touched.firstName || hasAttemptedSubmit) && !isFirstNameValid && (
+                  <p className="text-[11px] font-mono text-red-500 mt-1 flex items-center gap-1">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>{getFieldError('firstName')}</span>
+                  </p>
+                )}
               </div>
 
+              {/* Optional Last Name */}
               <div>
-                <label className="block text-xs font-mono uppercase text-neutral-500 mb-1">Last Name</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-mono uppercase text-neutral-500">Last Name (Optional)</label>
+                  {(touched.lastName || hasAttemptedSubmit) && isLastNameValid && formData.lastName && (
+                    <span className="text-[10px] font-mono text-emerald-500 flex items-center gap-0.5 font-bold">
+                      <Check className="w-3 h-3" /> Valid
+                    </span>
+                  )}
+                </div>
                 <input
                   type="text"
                   placeholder="e.g. Sharma"
                   value={formData.lastName}
-                  onChange={(e) => handleInputChange('lastName', e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 text-xs text-neutral-950 dark:text-white focus:outline-none focus:border-neutral-500"
+                  onChange={(e) => {
+                    handleInputChange('lastName', e.target.value);
+                    setTouched(prev => ({ ...prev, lastName: true }));
+                  }}
+                  onBlur={() => setTouched(prev => ({ ...prev, lastName: true }))}
+                  className={`w-full px-4 py-2.5 rounded-xl bg-neutral-50 dark:bg-neutral-950 border text-xs text-neutral-950 dark:text-white focus:outline-none transition-colors ${
+                    (touched.lastName || hasAttemptedSubmit) && !isLastNameValid
+                      ? 'border-red-500 focus:border-red-500 ring-1 ring-red-500/20'
+                      : 'border-neutral-200 dark:border-neutral-800 focus:border-neutral-500'
+                  }`}
                 />
+                {(touched.lastName || hasAttemptedSubmit) && !isLastNameValid && (
+                  <p className="text-[11px] font-mono text-red-500 mt-1 flex items-center gap-1">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>{getFieldError('lastName')}</span>
+                  </p>
+                )}
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Email Address */}
               <div>
-                <label className="block text-xs font-mono uppercase text-neutral-500 mb-1">Email Address</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-mono uppercase text-neutral-500">
+                    Email Address <span className="text-red-500">*</span>
+                  </label>
+                  {(touched.email || hasAttemptedSubmit) && isEmailValid && (
+                    <span className="text-[10px] font-mono text-emerald-500 flex items-center gap-0.5 font-bold">
+                      <Check className="w-3 h-3" /> Valid
+                    </span>
+                  )}
+                </div>
                 <input
                   type="email"
                   required
                   placeholder="e.g. rahul@gmail.com"
                   value={formData.email}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 text-xs text-neutral-950 dark:text-white focus:outline-none focus:border-neutral-500"
+                  onChange={(e) => {
+                    handleInputChange('email', e.target.value);
+                    setTouched(prev => ({ ...prev, email: true }));
+                  }}
+                  onBlur={() => setTouched(prev => ({ ...prev, email: true }))}
+                  className={`w-full px-4 py-2.5 rounded-xl bg-neutral-50 dark:bg-neutral-950 border text-xs text-neutral-950 dark:text-white focus:outline-none transition-colors ${
+                    (touched.email || hasAttemptedSubmit) && !isEmailValid
+                      ? 'border-red-500 focus:border-red-500 ring-1 ring-red-500/20'
+                      : 'border-neutral-200 dark:border-neutral-800 focus:border-neutral-500'
+                  }`}
                 />
+                {(touched.email || hasAttemptedSubmit) && !isEmailValid && (
+                  <p className="text-[11px] font-mono text-red-500 mt-1 flex items-center gap-1">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>{getFieldError('email')}</span>
+                  </p>
+                )}
               </div>
 
+              {/* WhatsApp Mobile Number */}
               <div>
-                <label className="block text-xs font-mono uppercase text-neutral-500 mb-1">WhatsApp Mobile Number</label>
-                <input
-                  type="tel"
-                  required
-                  placeholder="e.g. 9316614778 / 9876543210"
-                  value={formData.phone}
-                  onChange={(e) => handleInputChange('phone', e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 text-xs text-neutral-950 dark:text-white focus:outline-none focus:border-neutral-500"
-                />
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-mono uppercase text-neutral-500">
+                    WhatsApp Mobile Number <span className="text-red-500">*</span>
+                  </label>
+                  {(touched.phone || hasAttemptedSubmit) && isPhoneValid && (
+                    <span className="text-[10px] font-mono text-emerald-500 flex items-center gap-0.5 font-bold">
+                      <Check className="w-3 h-3" /> Valid 10-Digit
+                    </span>
+                  )}
+                </div>
+                <div className={`flex rounded-xl overflow-hidden border transition-colors focus-within:ring-1 focus-within:ring-neutral-500 ${
+                  (touched.phone || hasAttemptedSubmit) && !isPhoneValid
+                    ? 'border-red-500 ring-1 ring-red-500/20'
+                    : 'border-neutral-200 dark:border-neutral-800'
+                }`}>
+                  <span className="px-3.5 py-2.5 bg-neutral-100 dark:bg-neutral-800 text-xs font-mono font-bold text-neutral-700 dark:text-neutral-300 border-r border-neutral-200 dark:border-neutral-800 flex items-center select-none">
+                    +91
+                  </span>
+                  <input
+                    type="tel"
+                    required
+                    maxLength={10}
+                    placeholder="9876543210"
+                    value={formData.phone}
+                    onChange={(e) => {
+                      const numericVal = e.target.value.replace(/\D/g, '').slice(0, 10);
+                      handleInputChange('phone', numericVal);
+                      setTouched(prev => ({ ...prev, phone: true }));
+                    }}
+                    onBlur={() => setTouched(prev => ({ ...prev, phone: true }))}
+                    className="w-full px-4 py-2.5 bg-neutral-50 dark:bg-neutral-950 text-xs text-neutral-950 dark:text-white focus:outline-none"
+                  />
+                </div>
+                {(touched.phone || hasAttemptedSubmit) && !isPhoneValid && (
+                  <p className="text-[11px] font-mono text-red-500 mt-1 flex items-center gap-1">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>{getFieldError('phone')}</span>
+                  </p>
+                )}
               </div>
             </div>
 
+            {/* Street Address */}
             <div>
-              <label className="block text-xs font-mono uppercase text-neutral-500 mb-1">Street Address (Ghar / Flat No. & Area)</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-mono uppercase text-neutral-500">
+                  Street Address (Ghar / Flat No. & Area) <span className="text-red-500">*</span>
+                </label>
+                {(touched.addressLine1 || hasAttemptedSubmit) && isAddressValid && (
+                  <span className="text-[10px] font-mono text-emerald-500 flex items-center gap-0.5 font-bold">
+                    <Check className="w-3 h-3" /> Valid
+                  </span>
+                )}
+              </div>
               <input
                 type="text"
                 required
                 value={formData.addressLine1}
-                onChange={(e) => handleInputChange('addressLine1', e.target.value)}
-                placeholder="House / Flat No., Building, Street Name, Landmark"
-                className="w-full px-4 py-2.5 rounded-xl bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 text-xs text-neutral-950 dark:text-white focus:outline-none focus:border-neutral-500"
+                onChange={(e) => {
+                  handleInputChange('addressLine1', e.target.value);
+                  setTouched(prev => ({ ...prev, addressLine1: true }));
+                }}
+                onBlur={() => setTouched(prev => ({ ...prev, addressLine1: true }))}
+                placeholder="House / Flat No., Building, Street Name, Landmark (Min 10 characters)"
+                className={`w-full px-4 py-2.5 rounded-xl bg-neutral-50 dark:bg-neutral-950 border text-xs text-neutral-950 dark:text-white focus:outline-none transition-colors ${
+                  (touched.addressLine1 || hasAttemptedSubmit) && !isAddressValid
+                    ? 'border-red-500 focus:border-red-500 ring-1 ring-red-500/20'
+                    : 'border-neutral-200 dark:border-neutral-800 focus:border-neutral-500'
+                }`}
               />
+              {(touched.addressLine1 || hasAttemptedSubmit) && !isAddressValid && (
+                <p className="text-[11px] font-mono text-red-500 mt-1 flex items-center gap-1">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                  <span>{getFieldError('addressLine1')}</span>
+                </p>
+              )}
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
+            {/* City, State, Postal Code Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {/* City */}
               <div>
-                <label className="block text-xs font-mono uppercase text-neutral-500 mb-1">City</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-mono uppercase text-neutral-500">
+                    City <span className="text-red-500">*</span>
+                  </label>
+                  {(touched.city || hasAttemptedSubmit) && isCityValid && (
+                    <span className="text-[10px] font-mono text-emerald-500 flex items-center gap-0.5 font-bold">
+                      <Check className="w-3 h-3" /> Valid
+                    </span>
+                  )}
+                </div>
                 <input
                   type="text"
                   required
+                  placeholder="e.g. Mumbai"
                   value={formData.city}
-                  onChange={(e) => handleInputChange('city', e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 text-xs text-neutral-950 dark:text-white focus:outline-none focus:border-neutral-500"
+                  onChange={(e) => {
+                    handleInputChange('city', e.target.value);
+                    setTouched(prev => ({ ...prev, city: true }));
+                  }}
+                  onBlur={() => setTouched(prev => ({ ...prev, city: true }))}
+                  className={`w-full px-4 py-2.5 rounded-xl bg-neutral-50 dark:bg-neutral-950 border text-xs text-neutral-950 dark:text-white focus:outline-none transition-colors ${
+                    (touched.city || hasAttemptedSubmit) && !isCityValid
+                      ? 'border-red-500 focus:border-red-500 ring-1 ring-red-500/20'
+                      : 'border-neutral-200 dark:border-neutral-800 focus:border-neutral-500'
+                  }`}
                 />
+                {(touched.city || hasAttemptedSubmit) && !isCityValid && (
+                  <p className="text-[11px] font-mono text-red-500 mt-1 flex items-center gap-1">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>{getFieldError('city')}</span>
+                  </p>
+                )}
               </div>
+
+              {/* State */}
               <div>
-                <label className="block text-xs font-mono uppercase text-neutral-500 mb-1">State / Province</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-mono uppercase text-neutral-500">
+                    State <span className="text-red-500">*</span>
+                  </label>
+                  {(touched.state || hasAttemptedSubmit) && isStateValid && (
+                    <span className="text-[10px] font-mono text-emerald-500 flex items-center gap-0.5 font-bold">
+                      <Check className="w-3 h-3" /> Valid
+                    </span>
+                  )}
+                </div>
                 <input
                   type="text"
                   required
+                  placeholder="e.g. Maharashtra"
                   value={formData.state}
-                  onChange={(e) => handleInputChange('state', e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 text-xs text-neutral-950 dark:text-white focus:outline-none focus:border-neutral-500"
+                  onChange={(e) => {
+                    handleInputChange('state', e.target.value);
+                    setTouched(prev => ({ ...prev, state: true }));
+                  }}
+                  onBlur={() => setTouched(prev => ({ ...prev, state: true }))}
+                  className={`w-full px-4 py-2.5 rounded-xl bg-neutral-50 dark:bg-neutral-950 border text-xs text-neutral-950 dark:text-white focus:outline-none transition-colors ${
+                    (touched.state || hasAttemptedSubmit) && !isStateValid
+                      ? 'border-red-500 focus:border-red-500 ring-1 ring-red-500/20'
+                      : 'border-neutral-200 dark:border-neutral-800 focus:border-neutral-500'
+                  }`}
                 />
+                {(touched.state || hasAttemptedSubmit) && !isStateValid && (
+                  <p className="text-[11px] font-mono text-red-500 mt-1 flex items-center gap-1">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>{getFieldError('state')}</span>
+                  </p>
+                )}
               </div>
+
+              {/* Postal Code / PIN Code */}
               <div>
-                <label className="block text-xs font-mono uppercase text-neutral-500 mb-1">Postal Code</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-mono uppercase text-neutral-500">
+                    PIN Code <span className="text-red-500">*</span>
+                  </label>
+                  {(touched.postalCode || hasAttemptedSubmit) && isPostalCodeValid && (
+                    <span className="text-[10px] font-mono text-emerald-500 flex items-center gap-0.5 font-bold">
+                      <Check className="w-3 h-3" /> Valid 6-Digit
+                    </span>
+                  )}
+                </div>
                 <input
                   type="text"
                   required
+                  maxLength={6}
+                  placeholder="e.g. 400001"
                   value={formData.postalCode}
-                  onChange={(e) => handleInputChange('postalCode', e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 text-xs text-neutral-950 dark:text-white focus:outline-none focus:border-neutral-500"
+                  onChange={(e) => {
+                    const numericVal = e.target.value.replace(/\D/g, '').slice(0, 6);
+                    handleInputChange('postalCode', numericVal);
+                    setTouched(prev => ({ ...prev, postalCode: true }));
+                  }}
+                  onBlur={() => setTouched(prev => ({ ...prev, postalCode: true }))}
+                  className={`w-full px-4 py-2.5 rounded-xl bg-neutral-50 dark:bg-neutral-950 border text-xs text-neutral-950 dark:text-white focus:outline-none transition-colors ${
+                    (touched.postalCode || hasAttemptedSubmit) && !isPostalCodeValid
+                      ? 'border-red-500 focus:border-red-500 ring-1 ring-red-500/20'
+                      : 'border-neutral-200 dark:border-neutral-800 focus:border-neutral-500'
+                  }`}
                 />
+                {(touched.postalCode || hasAttemptedSubmit) && !isPostalCodeValid && (
+                  <p className="text-[11px] font-mono text-red-500 mt-1 flex items-center gap-1">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>{getFieldError('postalCode')}</span>
+                  </p>
+                )}
               </div>
             </div>
 
@@ -667,13 +962,15 @@ export const CheckoutView: React.FC = () => {
             {/* Place Order CTA Button */}
             <button
               type="submit"
-              disabled={isProcessing}
-              className={`w-full py-4 px-6 rounded-xl font-bold font-display uppercase tracking-wider text-xs flex items-center justify-center gap-2 transition-all shadow-xl disabled:opacity-50 cursor-pointer ${
-                paymentMethod === 'cash_on_delivery'
-                  ? 'bg-amber-400 hover:bg-amber-300 text-neutral-950 shadow-amber-400/20'
+              disabled={!isFormValid || isProcessing}
+              className={`w-full py-4 px-6 rounded-xl font-bold font-display uppercase tracking-wider text-xs flex items-center justify-center gap-2 transition-all shadow-xl cursor-pointer ${
+                !isFormValid || isProcessing
+                  ? 'bg-neutral-800 text-neutral-500 opacity-60 cursor-not-allowed border border-neutral-700 shadow-none'
+                  : paymentMethod === 'cash_on_delivery'
+                  ? 'bg-amber-400 hover:bg-amber-300 text-neutral-950 shadow-amber-400/20 active:scale-98'
                   : paymentMethod === 'whatsapp' || paymentMethod === 'upi'
-                  ? 'bg-emerald-500 hover:bg-emerald-400 text-neutral-950 shadow-emerald-500/20'
-                  : 'bg-white hover:bg-neutral-200 text-neutral-950'
+                  ? 'bg-emerald-500 hover:bg-emerald-400 text-neutral-950 shadow-emerald-500/20 active:scale-98'
+                  : 'bg-white hover:bg-neutral-200 text-neutral-950 active:scale-98'
               }`}
             >
               {isProcessing ? (
@@ -685,28 +982,46 @@ export const CheckoutView: React.FC = () => {
                     ? 'Opening WhatsApp Concierge...'
                     : 'Authorizing Order...'}
                 </span>
+              ) : !isFormValid ? (
+                <span className="flex items-center gap-2 font-mono">
+                  <AlertCircle className="w-4 h-4 text-amber-400" />
+                  <span>Fill Required Delivery Details To Place Order</span>
+                </span>
               ) : paymentMethod === 'cash_on_delivery' ? (
                 <>
                   <Banknote className="w-4 h-4 text-neutral-950" />
-                  <span>Place COD Order & Send to WhatsApp • {formatPrice(effectiveGrandTotal)}</span>
+                  <span>Confirm & Place COD Order • {formatPrice(effectiveGrandTotal)}</span>
                 </>
               ) : paymentMethod === 'upi' ? (
                 <>
                   <Sparkles className="w-4 h-4 text-neutral-950" />
-                  <span>Confirm UPI Order & Send to WhatsApp • {formatPrice(effectiveGrandTotal)}</span>
+                  <span>Confirm & Place UPI Order • {formatPrice(effectiveGrandTotal)}</span>
                 </>
               ) : paymentMethod === 'whatsapp' ? (
                 <>
                   <MessageCircle className="w-4 h-4 text-neutral-950" />
-                  <span>Send Order via WhatsApp • {formatPrice(effectiveGrandTotal)}</span>
+                  <span>Confirm & Place WhatsApp Order • {formatPrice(effectiveGrandTotal)}</span>
                 </>
               ) : (
                 <>
-                  <span>Place Order • {formatPrice(effectiveGrandTotal)}</span>
+                  <span>Confirm & Place Order • {formatPrice(effectiveGrandTotal)}</span>
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
             </button>
+
+            {/* Validation Feedback Warning */}
+            {!isFormValid && (
+              <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-mono flex items-start gap-2.5">
+                <AlertCircle className="w-4 h-4 shrink-0 text-red-400 mt-0.5" />
+                <div className="space-y-0.5">
+                  <span className="font-bold uppercase tracking-wider block">Delivery Address Incomplete</span>
+                  <span>
+                    Please provide a valid full name, 10-digit mobile number, complete street address (min 10 chars), and 6-digit Indian PIN code to enable order placement.
+                  </span>
+                </div>
+              </div>
+            )}
 
             <div className="flex items-center justify-center gap-2 text-[10px] font-mono text-neutral-500">
               <ShieldCheck className="w-4 h-4 text-emerald-400" />

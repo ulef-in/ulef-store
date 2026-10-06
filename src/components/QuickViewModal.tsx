@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useStore } from '../context/StoreContext';
 import { Size, ProductColor } from '../types';
-import { X, Star, Ruler, ShoppingBag, ArrowRight, Check, Heart } from 'lucide-react';
+import { X, Star, Ruler, ShoppingBag, ArrowRight, Check, Heart, ZoomIn } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { ProductImageLightbox } from './ProductImageLightbox';
 
 export const QuickViewModal: React.FC = () => {
   const {
@@ -13,7 +14,8 @@ export const QuickViewModal: React.FC = () => {
     toggleWishlist,
     isInWishlist,
     formatPrice,
-    setIsSizeGuideOpen
+    setIsSizeGuideOpen,
+    setActiveView
   } = useStore();
 
   const product = quickViewProduct;
@@ -21,6 +23,7 @@ export const QuickViewModal: React.FC = () => {
   const [selectedSize, setSelectedSize] = useState<Size>('L');
   const [selectedColor, setSelectedColor] = useState<ProductColor | null>(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
 
   useEffect(() => {
     if (product) {
@@ -92,16 +95,25 @@ export const QuickViewModal: React.FC = () => {
 
           {/* Left Gallery */}
           <div className="md:w-1/2 bg-neutral-950 p-4 sm:p-6 flex flex-col justify-between">
-            <div className="relative aspect-[3/4] w-full rounded-xl overflow-hidden bg-neutral-900 border border-neutral-800">
+            <div
+              onClick={() => setIsLightboxOpen(true)}
+              className="relative aspect-[3/4] w-full rounded-xl overflow-hidden bg-neutral-900 border border-neutral-800 cursor-zoom-in group select-none shadow-md"
+            >
               <img
                 src={currentImages[activeImageIndex] || currentImages[0]}
                 alt={product.name}
                 referrerPolicy="no-referrer"
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
               />
               <span className="absolute top-3 left-3 px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-neutral-950/80 text-white backdrop-blur-md border border-neutral-700">
                 {product.gsm} GSM
               </span>
+
+              {/* Subtle Helper Badge */}
+              <div className="absolute bottom-3 right-3 bg-neutral-950/85 text-white px-2.5 py-1 rounded-full text-[10px] font-mono flex items-center gap-1 backdrop-blur-md border border-white/10 shadow-lg group-hover:scale-105 transition-all">
+                <ZoomIn className="w-3 h-3 text-amber-400" />
+                <span>Tap to inspect</span>
+              </div>
             </div>
 
             {/* Thumbnail selector - ONLY show if product has more than 1 image */}
@@ -188,6 +200,7 @@ export const QuickViewModal: React.FC = () => {
                 <div className="text-xs font-mono uppercase text-neutral-400 mb-2 flex items-center justify-between">
                   <span>Select Size (Oversized Drape)</span>
                   <button
+                    type="button"
                     onClick={() => setIsSizeGuideOpen(true)}
                     className="text-neutral-400 hover:text-white flex items-center gap-1 underline text-[11px]"
                   >
@@ -258,6 +271,17 @@ export const QuickViewModal: React.FC = () => {
             </div>
           </div>
         </motion.div>
+
+        {/* Fullscreen Lightbox Modal */}
+        <ProductImageLightbox
+          isOpen={isLightboxOpen}
+          onClose={() => setIsLightboxOpen(false)}
+          images={currentImages}
+          initialIndex={activeImageIndex}
+          productName={product.name}
+          gsm={product.gsm}
+          subtitle={product.subtitle}
+        />
       </div>
     </AnimatePresence>
   );
