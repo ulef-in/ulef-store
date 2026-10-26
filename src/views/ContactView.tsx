@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { saveAppointmentBooking, saveContactInquiry, AppointmentBooking } from '../lib/supabase';
 import { SUPPORT_EMAIL, MERCHANT_DISPLAY_PHONE, getSupportWhatsAppUrl } from '../utils/whatsapp';
+import { sanitizeText, sanitizeEmail, sanitizePhone } from '../utils/sanitize';
 
 export const ContactView: React.FC = () => {
   const { showToast, setIsSupportChatOpen } = useStore();
@@ -49,8 +50,11 @@ export const ContactView: React.FC = () => {
   const [formMessage, setFormMessage] = useState('');
   const [isSubmittingInquiry, setIsSubmittingInquiry] = useState(false);
   const [isInquirySubmitted, setIsInquirySubmitted] = useState(false);
-
   const [openFaq, setOpenFaq] = useState<number | null>(0);
+
+  // Anti-Spam & Bot Defense State
+  const [honeypot, setHoneypot] = useState('');
+  const [lastSubmitTime, setLastSubmitTime] = useState<number>(0);
 
   const faqs = [
     {
@@ -77,7 +81,25 @@ export const ContactView: React.FC = () => {
 
   const handleAppointmentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!clientName || !clientEmail || !appointmentDate || !appointmentTime) {
+
+    // 1. Anti-Bot Honeypot Trap
+    if (honeypot && honeypot.trim().length > 0) {
+      return;
+    }
+
+    // 2. Client-side Rate Limiting (Prevent rapid-fire spam)
+    const now = Date.now();
+    if (now - lastSubmitTime < 2500) {
+      return;
+    }
+    setLastSubmitTime(now);
+
+    const safeName = sanitizeText(clientName, 60);
+    const safeEmail = sanitizeEmail(clientEmail);
+    const safePhone = sanitizePhone(clientPhone);
+    const safeNotes = sanitizeText(notes, 500);
+
+    if (!safeName || !safeEmail || !appointmentDate || !appointmentTime) {
       showToast('Missing Fields', 'Please complete all required appointment details.', 'error');
       return;
     }
@@ -85,14 +107,14 @@ export const ContactView: React.FC = () => {
     setIsSubmittingAppointment(true);
 
     const bookingData: AppointmentBooking = {
-      name: clientName,
-      email: clientEmail,
-      phone: clientPhone,
-      studio_location: studioLocation,
-      service_type: serviceType,
+      name: safeName,
+      email: safeEmail,
+      phone: safePhone,
+      studio_location: sanitizeText(studioLocation, 100),
+      service_type: sanitizeText(serviceType, 100),
       appointment_date: appointmentDate,
       appointment_time: appointmentTime,
-      notes: notes,
+      notes: safeNotes,
       status: 'Confirmed'
     };
 
@@ -120,14 +142,32 @@ export const ContactView: React.FC = () => {
 
   const handleInquirySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formName || !formEmail || !formMessage) return;
+
+    // 1. Anti-Bot Honeypot Trap
+    if (honeypot && honeypot.trim().length > 0) {
+      return;
+    }
+
+    // 2. Client-side Rate Limiting
+    const now = Date.now();
+    if (now - lastSubmitTime < 2500) {
+      return;
+    }
+    setLastSubmitTime(now);
+
+    const safeName = sanitizeText(formName, 60);
+    const safeEmail = sanitizeEmail(formEmail);
+    const safeSubject = sanitizeText(formSubject, 100);
+    const safeMessage = sanitizeText(formMessage, 1000);
+
+    if (!safeName || !safeEmail || !safeMessage) return;
 
     setIsSubmittingInquiry(true);
     await saveContactInquiry({
-      name: formName,
-      email: formEmail,
-      subject: formSubject,
-      message: formMessage
+      name: safeName,
+      email: safeEmail,
+      subject: safeSubject,
+      message: safeMessage
     });
 
     setIsSubmittingInquiry(false);
@@ -248,7 +288,18 @@ export const ContactView: React.FC = () => {
                   </button>
                 </div>
               ) : (
-                <form onSubmit={handleAppointmentSubmit} className="space-y-4">
+                <form onSubmit={handleAppointmentSubmit} className="space-y-4 relative">
+                  {/* Anti-Bot Honeypot Trap */}
+                  <div className="absolute -left-[9999px] top-0 opacity-0 pointer-events-none select-none h-0 w-0 overflow-hidden" aria-hidden="true" tabIndex={-1}>
+                    <input
+                      type="text"
+                      name="hp_contact_check"
+                      tabIndex={-1}
+                      autoComplete="off"
+                      value={honeypot}
+                      onChange={(e) => setHoneypot(e.target.value)}
+                    />
+                  </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-mono uppercase text-neutral-500 mb-1">
@@ -433,7 +484,18 @@ export const ContactView: React.FC = () => {
                   </button>
                 </div>
               ) : (
-                <form onSubmit={handleInquirySubmit} className="space-y-4">
+                <form onSubmit={handleInquirySubmit} className="space-y-4 relative">
+                  {/* Anti-Bot Honeypot Trap */}
+                  <div className="absolute -left-[9999px] top-0 opacity-0 pointer-events-none select-none h-0 w-0 overflow-hidden" aria-hidden="true" tabIndex={-1}>
+                    <input
+                      type="text"
+                      name="hp_inquiry_check"
+                      tabIndex={-1}
+                      autoComplete="off"
+                      value={honeypot}
+                      onChange={(e) => setHoneypot(e.target.value)}
+                    />
+                  </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-mono uppercase text-neutral-500 mb-1">Your Name</label>

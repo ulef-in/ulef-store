@@ -3,6 +3,7 @@ import { Product, Size, ProductColor } from '../types';
 import { useStore } from '../context/StoreContext';
 import { Heart, Eye, ShoppingBag, Star, Check } from 'lucide-react';
 import { motion } from 'motion/react';
+import { DropUrgencyTimer } from './DropUrgencyTimer';
 
 interface ProductCardProps {
   product: Product;
@@ -188,6 +189,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           
           <span className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400 uppercase">
             {product.fitType}
+          </span>
+        </div>
+
+        {/* Minimal Drop Urgency Badge (Zero Layout Shift) */}
+        <div className="pt-0.5 flex items-center justify-between">
+          <DropUrgencyTimer variant="badge" />
+          <span className="text-[9px] font-mono text-neutral-400 dark:text-neutral-500 uppercase tracking-wider">
+            Drop 04
           </span>
         </div>
       </div>

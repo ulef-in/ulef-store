@@ -309,6 +309,17 @@ export function resolveHeroPosterUrl(url?: string | null): string {
     return DEFAULT_HERO_POSTER;
   }
   const clean = url.trim();
+
+  // Explicitly block malicious protocol schemas
+  if (/^(javascript|vbscript|data|file):/i.test(clean)) {
+    return DEFAULT_HERO_POSTER;
+  }
+
+  // Must be valid http/https or root-relative path
+  if (!clean.startsWith('https://') && !clean.startsWith('http://') && !clean.startsWith('/')) {
+    return DEFAULT_HERO_POSTER;
+  }
+
   if (clean.includes('twpnSkhv') || clean.includes('ibb.co/twpnSkhv')) {
     return 'https://i.ibb.co/ZRzv3tJF/1790769035371.png';
   }

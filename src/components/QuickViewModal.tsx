@@ -4,6 +4,7 @@ import { Size, ProductColor } from '../types';
 import { X, Star, Ruler, ShoppingBag, ArrowRight, Check, Heart, ZoomIn } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ProductImageLightbox } from './ProductImageLightbox';
+import { DropUrgencyTimer } from './DropUrgencyTimer';
 
 export const QuickViewModal: React.FC = () => {
   const {
@@ -171,6 +172,9 @@ export const QuickViewModal: React.FC = () => {
                   </span>
                 )}
               </div>
+
+              {/* Urgency Countdown Timer */}
+              <DropUrgencyTimer variant="compact" />
 
               {/* Color selector */}
               <div>

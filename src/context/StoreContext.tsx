@@ -34,6 +34,8 @@ export type ViewType =
   | 'wishlist'
   | 'order-confirmation';
 
+export type LegalPolicyType = 'privacy' | 'terms' | 'shipping' | 'contact' | null;
+
 interface StoreContextType {
   products: Product[];
   cart: CartItem[];
@@ -49,6 +51,7 @@ interface StoreContextType {
   isSearchOpen: boolean;
   isSizeGuideOpen: boolean;
   isSupportChatOpen: boolean;
+  legalPolicy: LegalPolicyType;
   currency: Currency;
   searchQuery: string;
   appliedCoupon: { code: string; discountPercent: number } | null;
@@ -64,6 +67,7 @@ interface StoreContextType {
   setIsSearchOpen: (open: boolean) => void;
   setIsSizeGuideOpen: (open: boolean) => void;
   setIsSupportChatOpen: (open: boolean) => void;
+  openLegalPolicy: (policy: LegalPolicyType) => void;
   setSearchQuery: (query: string) => void;
   setCurrency: (currency: Currency) => void;
   toggleTheme: () => void;
@@ -134,6 +138,7 @@ interface StoreContextType {
   
   // Admin Security & Password Gate
   isAdminAuthenticated: boolean;
+  adminLockoutSeconds: number;
   verifyAdminPassword: (password: string) => boolean;
   setAdminPassword: (newPassword: string) => void;
   lockAdmin: () => void;
@@ -309,10 +314,38 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
   });
 
-  // Admin Security Password State
+  // Admin Security Password State & Brute-Force Protection
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(() => {
     return typeof sessionStorage !== 'undefined' && sessionStorage.getItem('ulef_admin_auth') === 'true';
   });
+
+  const [adminLockoutSeconds, setAdminLockoutSeconds] = useState<number>(() => {
+    try {
+      const lockoutUntil = parseInt(localStorage.getItem('ulef_admin_lockout_until') || '0', 10);
+      const remaining = Math.ceil((lockoutUntil - Date.now()) / 1000);
+      return remaining > 0 ? remaining : 0;
+    } catch {
+      return 0;
+    }
+  });
+
+  // Active countdown effect for admin brute-force lockout
+  useEffect(() => {
+    if (adminLockoutSeconds <= 0) return;
+    const interval = setInterval(() => {
+      setAdminLockoutSeconds(prev => {
+        if (prev <= 1) {
+          try {
+            localStorage.removeItem('ulef_admin_lockout_until');
+            localStorage.removeItem('ulef_admin_failed_attempts');
+          } catch {}
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [adminLockoutSeconds]);
 
   // Navigation & Modals
   const [activeView, setActiveView] = useState<ViewType>('home');
@@ -323,6 +356,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false);
   const [isSupportChatOpen, setIsSupportChatOpen] = useState(false);
+  const [legalPolicy, setLegalPolicy] = useState<LegalPolicyType>(null);
+
+  const openLegalPolicy = (policy: LegalPolicyType) => {
+    setLegalPolicy(policy);
+  };
   const [currency, setCurrency] = useState<Currency>(() => {
     const saved = localStorage.getItem('ulef_currency_v3');
     if (saved === 'INR' || saved === 'USD' || saved === 'EUR' || saved === 'GBP') {
@@ -1210,6 +1248,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         isSearchOpen,
         isSizeGuideOpen,
         isSupportChatOpen,
+        legalPolicy,
         currency,
         searchQuery,
         appliedCoupon,
@@ -1223,6 +1262,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setIsSearchOpen,
         setIsSizeGuideOpen,
         setIsSupportChatOpen,
+        openLegalPolicy,
         setSearchQuery,
         setCurrency,
         toggleTheme,
@@ -1273,6 +1313,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         login,
         logout,
         isAdminAuthenticated,
+        adminLockoutSeconds,
         verifyAdminPassword,
         setAdminPassword,
         lockAdmin,

@@ -100,6 +100,7 @@ export const AdminView: React.FC = () => {
     replyToReview,
     toggleFeatureReview,
     isAdminAuthenticated,
+    adminLockoutSeconds,
     verifyAdminPassword,
     setAdminPassword,
     lockAdmin,
@@ -658,6 +659,26 @@ export const AdminView: React.FC = () => {
             </p>
           </div>
 
+          {adminLockoutSeconds > 0 && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="p-4 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-mono space-y-1 text-left"
+            >
+              <div className="flex items-center gap-2 font-bold uppercase tracking-wider text-red-500">
+                <ShieldAlert className="w-4 h-4 shrink-0" />
+                <span>Brute-Force Defense Active</span>
+              </div>
+              <p className="text-[11px] text-neutral-300">
+                Too many failed password attempts. Access temporarily suspended for{' '}
+                <strong className="text-amber-400 font-mono">
+                  {Math.floor(adminLockoutSeconds / 60)}m {adminLockoutSeconds % 60}s
+                </strong>
+                .
+              </p>
+            </motion.div>
+          )}
+
           <form onSubmit={handleUnlockAdmin} className="space-y-4 text-left">
             <div>
               <label className="block text-xs font-mono uppercase text-neutral-500 mb-1.5 font-bold">
@@ -668,18 +689,20 @@ export const AdminView: React.FC = () => {
                   type={showPassword ? 'text' : 'password'}
                   required
                   autoFocus
+                  disabled={adminLockoutSeconds > 0}
                   value={enteredPassword}
                   onChange={(e) => {
                     setEnteredPassword(e.target.value);
                     setPasswordError('');
                   }}
-                  placeholder="Enter admin password..."
-                  className="w-full px-4 py-3 pr-12 rounded-xl bg-neutral-50 dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-800 text-sm font-mono text-neutral-950 dark:text-white focus:outline-none focus:border-amber-400 transition-colors"
+                  placeholder={adminLockoutSeconds > 0 ? 'Locked due to failed attempts...' : 'Enter admin password...'}
+                  className="w-full px-4 py-3 pr-12 rounded-xl bg-neutral-50 dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-800 text-sm font-mono text-neutral-950 dark:text-white focus:outline-none focus:border-amber-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-3 text-neutral-400 hover:text-neutral-600 dark:hover:text-white transition-colors"
+                  disabled={adminLockoutSeconds > 0}
+                  className="absolute right-3 top-3 text-neutral-400 hover:text-neutral-600 dark:hover:text-white disabled:opacity-30 transition-colors"
                   aria-label="Toggle password visibility"
                 >
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
@@ -687,7 +710,7 @@ export const AdminView: React.FC = () => {
               </div>
             </div>
 
-            {passwordError && (
+            {passwordError && !adminLockoutSeconds && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -700,14 +723,19 @@ export const AdminView: React.FC = () => {
 
             <button
               type="submit"
-              disabled={isVerifying || !enteredPassword}
-              className="w-full py-3.5 px-6 rounded-xl bg-amber-400 hover:bg-amber-300 text-neutral-950 font-bold font-display uppercase tracking-wider text-xs transition-all flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 cursor-pointer"
+              disabled={isVerifying || !enteredPassword || adminLockoutSeconds > 0}
+              className="w-full py-3.5 px-6 rounded-xl bg-amber-400 hover:bg-amber-300 text-neutral-950 font-bold font-display uppercase tracking-wider text-xs transition-all flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
               {isVerifying ? (
                 <span className="flex items-center gap-2 font-mono text-xs">
                   <span className="w-4 h-4 border-2 border-neutral-950 border-t-transparent rounded-full animate-spin" />
                   Verifying Credentials...
                 </span>
+              ) : adminLockoutSeconds > 0 ? (
+                <>
+                  <ShieldAlert className="w-4 h-4 text-red-950" />
+                  <span>Locked ({Math.floor(adminLockoutSeconds / 60)}m {adminLockoutSeconds % 60}s)</span>
+                </>
               ) : (
                 <>
                   <KeyRound className="w-4 h-4" />

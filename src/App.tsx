@@ -13,6 +13,7 @@ import { AuthModal } from './components/AuthModal';
 import { QuickViewModal } from './components/QuickViewModal';
 import { SizeGuideModal } from './components/SizeGuideModal';
 import { CustomerSupportChat } from './components/CustomerSupportChat';
+import { LegalModal } from './components/LegalModal';
 import { Toast } from './components/Toast';
 
 // Views
@@ -101,6 +102,7 @@ const AppContent: React.FC = () => {
       <QuickViewModal />
       <SizeGuideModal />
       <CustomerSupportChat />
+      <LegalModal />
       <Toast />
     </div>
   );

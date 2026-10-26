@@ -3,6 +3,7 @@ import { useStore } from '../context/StoreContext';
 import { Size, ProductColor, Product } from '../types';
 import { ProductCard } from '../components/ProductCard';
 import { ProductImageLightbox } from '../components/ProductImageLightbox';
+import { DropUrgencyTimer } from '../components/DropUrgencyTimer';
 import {
   Star,
   Ruler,
@@ -38,7 +39,8 @@ export const ProductDetailView: React.FC = () => {
     setActiveView,
     addReview,
     products,
-    showToast
+    showToast,
+    openLegalPolicy
   } = useStore();
 
   const product = selectedProduct || products[0];
@@ -270,6 +272,9 @@ export const ProductDetailView: React.FC = () => {
             )}
           </div>
 
+          {/* Architectural Streetwear Urgency Countdown Timer */}
+          <DropUrgencyTimer />
+
           {/* Colorway Selection */}
           <div className="space-y-2.5">
             <div className="flex items-center justify-between text-xs font-mono">
@@ -423,15 +428,21 @@ export const ProductDetailView: React.FC = () => {
             )}
           </div>
 
-          {/* Value props mini bar */}
-          <div className="grid grid-cols-2 gap-3 pt-3 text-xs font-mono text-neutral-600 dark:text-neutral-400 border-t border-neutral-200 dark:border-neutral-800">
-            <div className="flex items-center gap-2">
-              <Truck className="w-4 h-4 text-amber-500" />
-              <span>Free Global Express Shipping</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <RotateCcw className="w-4 h-4 text-amber-500" />
-              <span>7-Day Easy Returns</span>
+          {/* Value props trust badge bar */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-3.5 text-xs font-mono border-t border-neutral-200 dark:border-neutral-800">
+            <button
+              type="button"
+              onClick={() => openLegalPolicy('shipping')}
+              className="flex items-center gap-2 text-neutral-800 dark:text-neutral-200 hover:text-amber-500 dark:hover:text-amber-400 transition-colors text-left cursor-pointer group"
+            >
+              <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0 group-hover:scale-110 transition-transform" />
+              <span className="font-bold underline decoration-neutral-300 dark:decoration-neutral-700 underline-offset-2">
+                ✓ 7-Day Hassle-Free Exchange / Replacement
+              </span>
+            </button>
+            <div className="flex items-center gap-2 text-neutral-600 dark:text-neutral-400">
+              <Truck className="w-4 h-4 text-amber-500 shrink-0" />
+              <span>Free Nationwide Express Dispatch (48h)</span>
             </div>
           </div>
 

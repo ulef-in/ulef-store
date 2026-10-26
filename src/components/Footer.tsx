@@ -4,7 +4,7 @@ import { ArrowRight, CheckCircle2, ShieldCheck, Truck, RefreshCw, Feather, Messa
 import { MERCHANT_DISPLAY_PHONE, SUPPORT_EMAIL, getSupportWhatsAppUrl } from '../utils/whatsapp';
 
 export const Footer: React.FC = () => {
-  const { setActiveView, showToast, currentUser, isAdminAuthenticated, addVipSubscriber } = useStore();
+  const { setActiveView, showToast, currentUser, isAdminAuthenticated, addVipSubscriber, openLegalPolicy } = useStore();
   const [newsletterContact, setNewsletterContact] = useState('');
   const [isSubscribed, setIsSubscribed] = useState(false);
 
@@ -76,19 +76,23 @@ export const Footer: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-start gap-3">
-            <div className="p-2.5 rounded-xl bg-neutral-900 border border-neutral-800 text-amber-400 shrink-0">
+          <button
+            type="button"
+            onClick={() => openLegalPolicy('shipping')}
+            className="flex items-start gap-3 text-left group hover:opacity-95 transition-opacity cursor-pointer"
+          >
+            <div className="p-2.5 rounded-xl bg-neutral-900 border border-neutral-800 text-amber-400 shrink-0 group-hover:border-amber-500/50 transition-colors">
               <ShieldCheck className="w-5 h-5" />
             </div>
             <div>
-              <h4 className="text-xs font-bold font-display uppercase tracking-wider text-white">
-                7-DAY EASY RETURNS
+              <h4 className="text-xs font-bold font-display uppercase tracking-wider text-white group-hover:text-amber-400 transition-colors">
+                7-DAY EASY RETURNS & REPLACEMENTS
               </h4>
               <p className="text-xs text-neutral-400 mt-0.5 leading-relaxed">
-                Hassle-free size exchange and returns within 7 days of delivery.
+                Hassle-free size exchange and replacements within 7 days of delivery.
               </p>
             </div>
-          </div>
+          </button>
         </div>
       </div>
 
@@ -247,8 +251,43 @@ export const Footer: React.FC = () => {
           </div>
         </div>
 
+        {/* Legal & Compliance Links */}
+        <div className="mt-12 pt-6 border-t border-neutral-900/80 flex flex-wrap items-center justify-center sm:justify-start gap-y-2 gap-x-3 sm:gap-x-4 text-[11px] font-mono tracking-wider text-neutral-400">
+          <button
+            type="button"
+            onClick={() => openLegalPolicy('privacy')}
+            className="hover:text-amber-400 text-neutral-400 transition-colors cursor-pointer py-1"
+          >
+            [PRIVACY POLICY]
+          </button>
+          <span className="text-neutral-700 hidden sm:inline">•</span>
+          <button
+            type="button"
+            onClick={() => openLegalPolicy('terms')}
+            className="hover:text-amber-400 text-neutral-400 transition-colors cursor-pointer py-1"
+          >
+            [TERMS OF SERVICE]
+          </button>
+          <span className="text-neutral-700 hidden sm:inline">•</span>
+          <button
+            type="button"
+            onClick={() => openLegalPolicy('shipping')}
+            className="hover:text-amber-400 text-neutral-400 transition-colors cursor-pointer py-1"
+          >
+            [SHIPPING & RETURNS]
+          </button>
+          <span className="text-neutral-700 hidden sm:inline">•</span>
+          <button
+            type="button"
+            onClick={() => openLegalPolicy('contact')}
+            className="hover:text-amber-400 text-neutral-400 transition-colors cursor-pointer py-1"
+          >
+            [LEGAL CONTACT]
+          </button>
+        </div>
+
         {/* Bottom copyright & payment methods */}
-        <div className="mt-12 pt-8 border-t border-neutral-900 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-neutral-500 font-mono">
+        <div className="mt-6 pt-6 border-t border-neutral-900/60 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-neutral-500 font-mono">
           <div>
             © {new Date().getFullYear()} ULEF.IN Atelier Corp. All rights reserved. • Support: {SUPPORT_EMAIL}
           </div>

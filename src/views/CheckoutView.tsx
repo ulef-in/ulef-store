@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { sendToWhatsApp, generateOrderWhatsAppMessage, getMerchantWhatsAppPhone, MERCHANT_DISPLAY_PHONE } from '../utils/whatsapp';
+import { sanitizeText, sanitizeEmail, sanitizePhone, sanitizePincode } from '../utils/sanitize';
 
 // Strict Validation Patterns
 const INDIAN_MOBILE_REGEX = /^[6-9]\d{9}$/;
@@ -49,7 +50,8 @@ export const CheckoutView: React.FC = () => {
     merchantUpiId,
     merchantUpiQrImage,
     merchantUpiName,
-    codSettings
+    codSettings,
+    openLegalPolicy
   } = useStore();
 
   // Form State
@@ -78,6 +80,10 @@ export const CheckoutView: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
+
+  // Anti-Spam & Bot Defense State
+  const [honeypot, setHoneypot] = useState('');
+  const [lastSubmitTime, setLastSubmitTime] = useState<number>(0);
 
   // Field-level error calculator
   const getFieldError = (field: keyof ShippingAddress): string => {
@@ -173,8 +179,20 @@ export const CheckoutView: React.FC = () => {
     );
   }
 
-  const handleInputChange = (field: keyof ShippingAddress, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  const handleInputChange = (field: keyof ShippingAddress, rawValue: string) => {
+    let sanitizedVal = rawValue;
+    if (field === 'phone') {
+      sanitizedVal = sanitizePhone(rawValue);
+    } else if (field === 'postalCode') {
+      sanitizedVal = sanitizePincode(rawValue);
+    } else if (field === 'email') {
+      sanitizedVal = sanitizeEmail(rawValue);
+    } else if (field === 'firstName' || field === 'lastName' || field === 'city' || field === 'state') {
+      sanitizedVal = sanitizeText(rawValue, 60);
+    } else if (field === 'addressLine1' || field === 'addressLine2') {
+      sanitizedVal = sanitizeText(rawValue, 180);
+    }
+    setFormData(prev => ({ ...prev, [field]: sanitizedVal }));
   };
 
   const handleCopyUpiId = () => {
@@ -186,6 +204,19 @@ export const CheckoutView: React.FC = () => {
   const handlePlaceOrder = (e: React.FormEvent) => {
     e.preventDefault();
     setHasAttemptedSubmit(true);
+
+    // 1. Anti-Bot Honeypot Defense
+    if (honeypot && honeypot.trim().length > 0) {
+      // Silently discard automated spam bot submissions
+      return;
+    }
+
+    // 2. Client-side Rate Limiting (Prevent double-click submit bursts within 3s)
+    const now = Date.now();
+    if (now - lastSubmitTime < 3000) {
+      return;
+    }
+    setLastSubmitTime(now);
 
     if (!isFormValid) {
       setTouched({
@@ -203,6 +234,20 @@ export const CheckoutView: React.FC = () => {
 
     setIsProcessing(true);
 
+    // Deep sanitize shipping address payload
+    const safeAddress: ShippingAddress = {
+      firstName: sanitizeText(formData.firstName, 60),
+      lastName: sanitizeText(formData.lastName || '', 60),
+      email: sanitizeEmail(formData.email),
+      phone: sanitizePhone(formData.phone),
+      addressLine1: sanitizeText(formData.addressLine1, 180),
+      addressLine2: formData.addressLine2 ? sanitizeText(formData.addressLine2, 180) : '',
+      city: sanitizeText(formData.city, 60),
+      state: sanitizeText(formData.state, 60),
+      postalCode: sanitizePincode(formData.postalCode),
+      country: 'India'
+    };
+
     // Trigger celebration confetti
     try {
       confetti({
@@ -214,17 +259,18 @@ export const CheckoutView: React.FC = () => {
       // ignore
     }
 
+    const safeUtr = sanitizeText(upiUtr, 30);
     const paymentStatus = paymentMethod === 'cash_on_delivery'
       ? 'Cash on Delivery'
       : paymentMethod === 'whatsapp'
       ? 'Pending WhatsApp Confirmation'
       : paymentMethod === 'upi'
-      ? (upiUtr.trim() ? `Paid via UPI (UTR: ${upiUtr.trim()})` : 'Pending UPI Verification')
+      ? (safeUtr ? `Paid via UPI (UTR: ${safeUtr})` : 'Pending UPI Verification')
       : 'Paid';
 
     const newOrder = placeOrder({
       items: cart,
-      shippingAddress: formData,
+      shippingAddress: safeAddress,
       billingSameAsShipping,
       paymentMethod,
       paymentStatus: paymentStatus as any,
@@ -266,7 +312,20 @@ export const CheckoutView: React.FC = () => {
         </button>
       </div>
 
-      <form onSubmit={handlePlaceOrder} className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
+      <form onSubmit={handlePlaceOrder} className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 relative">
+        {/* Anti-Bot Honeypot Trap - Invisible to humans */}
+        <div className="absolute -left-[9999px] top-0 opacity-0 pointer-events-none select-none h-0 w-0 overflow-hidden" aria-hidden="true" tabIndex={-1}>
+          <label htmlFor="hp_company_sec">Do not fill this field</label>
+          <input
+            id="hp_company_sec"
+            type="text"
+            name="hp_company_sec"
+            tabIndex={-1}
+            autoComplete="off"
+            value={honeypot}
+            onChange={(e) => setHoneypot(e.target.value)}
+          />
+        </div>
         {/* Left Form: Contact, Shipping, Payment */}
         <div className="lg:col-span-7 space-y-8">
           {/* Section 1: Contact Information */}
@@ -1009,6 +1068,35 @@ export const CheckoutView: React.FC = () => {
                 </>
               )}
             </button>
+
+            {/* Checkout Consent Notice */}
+            <p className="text-center text-[11px] text-neutral-400 font-mono leading-relaxed px-1">
+              By placing your order, you agree to ULEF&apos;s{' '}
+              <button
+                type="button"
+                onClick={() => openLegalPolicy('terms')}
+                className="text-amber-400 hover:text-amber-300 underline underline-offset-2 transition-colors cursor-pointer font-medium"
+              >
+                Terms of Service
+              </button>
+              ,{' '}
+              <button
+                type="button"
+                onClick={() => openLegalPolicy('shipping')}
+                className="text-amber-400 hover:text-amber-300 underline underline-offset-2 transition-colors cursor-pointer font-medium"
+              >
+                7-Day Exchange Policy
+              </button>
+              , and{' '}
+              <button
+                type="button"
+                onClick={() => openLegalPolicy('privacy')}
+                className="text-amber-400 hover:text-amber-300 underline underline-offset-2 transition-colors cursor-pointer font-medium"
+              >
+                Privacy Policy
+              </button>
+              .
+            </p>
 
             {/* Validation Feedback Warning */}
             {!isFormValid && (
