@@ -31,15 +31,15 @@ export const INITIAL_ORDERS: Order[] = [
           isBestSeller: true,
           rating: 5.0,
           reviewsCount: 1,
-          colors: [{ name: 'Onyx Black', hex: '#111111', image: 'https://i.ibb.co/ksz6KPN4/1790772061924.png' }],
+          colors: [{ name: 'Onyx Black', hex: '#111111', image: '/hero-bg.jpg' }],
           sizes: ['L'],
           stock: { XS: 0, S: 0, M: 0, L: 10, XL: 0, XXL: 0, XXXL: 0 },
-          images: ['https://i.ibb.co/ksz6KPN4/1790772061924.png'],
+          images: ['/hero-bg.jpg'],
           reviews: [],
           createdAt: '2026-09-28T14:30:00Z'
         },
         selectedSize: 'L',
-        selectedColor: { name: 'Onyx Black', hex: '#111111', image: 'https://i.ibb.co/ksz6KPN4/1790772061924.png' },
+        selectedColor: { name: 'Onyx Black', hex: '#111111', image: '/hero-bg.jpg' },
         quantity: 1,
         price: 2499
       }

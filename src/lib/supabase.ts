@@ -299,10 +299,10 @@ export function subscribeToProductChanges(
   }
 }
 
-export const DEFAULT_HERO_POSTER = 'https://i.ibb.co/ZRzv3tJF/1790769035371.png';
+export const DEFAULT_HERO_POSTER = '/hero-bg.jpg';
 
 /**
- * Resolves any ImgBB page URL or missing string to the high-res direct image URL
+ * Resolves hero poster image URL to safe local or remote path, completely eliminating fragile external ImgBB links.
  */
 export function resolveHeroPosterUrl(url?: string | null): string {
   if (!url || typeof url !== 'string' || !url.trim()) {
@@ -315,17 +315,16 @@ export function resolveHeroPosterUrl(url?: string | null): string {
     return DEFAULT_HERO_POSTER;
   }
 
+  // Intercept and purge any external ImgBB dependencies returning 503 Service Unavailable
+  if (clean.includes('ibb.co') || clean.includes('imgbb.com') || clean.includes('1790769035371') || clean.includes('1790772061924')) {
+    return DEFAULT_HERO_POSTER;
+  }
+
   // Must be valid http/https or root-relative path
   if (!clean.startsWith('https://') && !clean.startsWith('http://') && !clean.startsWith('/')) {
     return DEFAULT_HERO_POSTER;
   }
 
-  if (clean.includes('twpnSkhv') || clean.includes('ibb.co/twpnSkhv')) {
-    return 'https://i.ibb.co/ZRzv3tJF/1790769035371.png';
-  }
-  if (clean.includes('pBNr2kYf') || clean.includes('ibb.co/pBNr2kYf')) {
-    return 'https://i.ibb.co/ksz6KPN4/1790772061924.png';
-  }
   // Eliminate legacy unsplash editorial placeholder/girl photo so it never flashes
   if (clean.includes('photo-1503342217505-b0a15ec3261c')) {
     return DEFAULT_HERO_POSTER;

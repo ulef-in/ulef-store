@@ -6,18 +6,40 @@ import { DEFAULT_HERO_POSTER, resolveHeroPosterUrl } from '../lib/supabase';
 
 export const HeroBanner: React.FC = () => {
   const { setActiveView, heroBannerImage, heroBannerOpacity } = useStore();
+  const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
 
-  const rawPoster = resolveHeroPosterUrl(heroBannerImage) || DEFAULT_HERO_POSTER;
-  const currentPoster = imageError ? '/images/hero-banner-brand.png' : rawPoster;
-  const posterOpacity = typeof heroBannerOpacity === 'number' ? heroBannerOpacity / 100 : 0.50;
+  // Strictly prioritize robust local asset /hero-bg.jpg and purge fragile ImgBB URLs
+  const rawPoster = resolveHeroPosterUrl(heroBannerImage) || '/hero-bg.jpg';
+  const currentPoster = imageError || rawPoster.includes('ibb.co') || rawPoster.includes('imgbb')
+    ? '/hero-bg.jpg'
+    : rawPoster;
+  const posterOpacity = typeof heroBannerOpacity === 'number' ? heroBannerOpacity / 100 : 0.60;
 
   return (
-    <div className="relative w-full max-w-[100vw] overflow-x-hidden bg-neutral-950 text-white">
-      {/* Background Editorial High-Res Imagery with Luxury Overlay */}
-      <div className="relative min-h-[85vh] lg:min-h-[88vh] flex items-center justify-center pt-8 pb-14 sm:pt-12 sm:pb-20">
+    <div className="relative w-full max-w-[100vw] overflow-x-hidden bg-[#080808] text-white">
+      {/* Background Editorial High-Res Imagery with Sleek Obsidian Luxury Fallback */}
+      <div className="relative min-h-[85vh] lg:min-h-[88vh] flex items-center justify-center pt-8 pb-14 sm:pt-12 sm:pb-20 bg-gradient-to-b from-[#080808] via-[#0d0d0d] to-[#121212]">
+        {/* Subtle Architectural Radial Glow (Deep Obsidian & Atelier Ambient Lighting) */}
         <div
-          className="absolute inset-0 z-0 overflow-hidden bg-neutral-950 w-full"
+          className="absolute inset-0 z-0 pointer-events-none"
+          style={{
+            background:
+              'radial-gradient(ellipse 70% 50% at 50% 35%, rgba(255, 255, 255, 0.04) 0%, rgba(18, 18, 18, 0.5) 50%, rgba(8, 8, 8, 0.98) 100%)'
+          }}
+        />
+        {/* Warm Subtle Atelier Accent Halo */}
+        <div
+          className="absolute inset-0 z-0 pointer-events-none opacity-40"
+          style={{
+            background:
+              'radial-gradient(circle at 50% 20%, rgba(217, 119, 6, 0.08) 0%, transparent 60%)'
+          }}
+        />
+
+        {/* Hero Background Layer (Local Image with Architectural Scrims) */}
+        <div
+          className="absolute inset-0 z-0 overflow-hidden w-full transition-opacity duration-700"
           style={{
             backgroundImage: `url(${currentPoster})`,
             backgroundPosition: 'center top',
@@ -28,25 +50,29 @@ export const HeroBanner: React.FC = () => {
         >
           <img
             src={currentPoster}
-            alt="ULEF.IN Atelier Brand Poster"
+            alt="ULEF.IN Atelier Heavyweight Drapery"
             loading="eager"
             decoding="async"
             fetchPriority="high"
-            referrerPolicy="no-referrer"
+            onLoad={() => setImageLoaded(true)}
             onError={() => setImageError(true)}
             style={{
-              opacity: posterOpacity,
+              opacity: imageLoaded ? posterOpacity : 0,
               objectFit: 'cover',
               objectPosition: 'center top',
               width: '100%',
               height: '100%'
             }}
-            className="w-full h-full object-cover [object-position:center_top]"
+            className="w-full h-full object-cover [object-position:center_top] transition-opacity duration-700"
           />
-          {/* Readability scrim & luxury vignette overlays */}
-          <div className="absolute inset-0 bg-neutral-950/45" />
-          <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/50 to-neutral-950/75" />
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-transparent via-neutral-950/50 to-neutral-950" />
+
+          {/* Brutalist Architectural Dark Vignette Overlays & High-Contrast Scrim */}
+          <div className="absolute inset-0 bg-[#080808]/50" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#080808] via-[#080808]/30 to-[#080808]/75" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-transparent via-[#080808]/50 to-[#080808]" />
+
+          {/* Subtle Architectural Grid Lines Overlay */}
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)] pointer-events-none opacity-60" />
         </div>
 
         {/* Content Container */}
@@ -56,7 +82,7 @@ export const HeroBanner: React.FC = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="inline-flex items-center gap-1.5 sm:gap-2 px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-full bg-black/60 backdrop-blur-md border border-white/20 text-neutral-200 text-[10px] sm:text-xs font-mono uppercase tracking-[0.15em] sm:tracking-[0.2em] mb-4 sm:mb-6 max-w-full text-center shadow-lg"
+            className="inline-flex items-center gap-1.5 sm:gap-2 px-4 sm:px-5 py-1.5 sm:py-2 rounded-full bg-black/75 backdrop-blur-md border border-white/25 text-neutral-200 text-[10px] sm:text-xs font-mono uppercase tracking-[0.18em] sm:tracking-[0.22em] mb-4 sm:mb-6 max-w-full text-center shadow-2xl"
           >
             <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-400 shrink-0" />
             <span className="truncate sm:whitespace-normal font-semibold">DROP 04 • ARCHITECTURAL OVERSIZED ESSENTIALS</span>
@@ -67,7 +93,7 @@ export const HeroBanner: React.FC = () => {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.1 }}
-            className="w-full font-black font-display uppercase text-white max-w-4xl text-center leading-[1.05] sm:leading-[0.95] tracking-tight sm:tracking-tighter px-1 sm:px-4 drop-shadow-[0_4px_16px_rgba(0,0,0,0.8)]"
+            className="w-full font-black font-display uppercase text-white max-w-4xl text-center leading-[1.05] sm:leading-[0.95] tracking-tight sm:tracking-tighter px-1 sm:px-4 drop-shadow-[0_4px_24px_rgba(0,0,0,0.95)]"
           >
             <span className="inline-block text-[clamp(1.8rem,6vw,2.4rem)] sm:text-6xl md:text-7xl lg:text-8xl">
               HEAVYWEIGHT
@@ -85,7 +111,7 @@ export const HeroBanner: React.FC = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
-            className="mt-4 sm:mt-6 text-xs sm:text-base md:text-lg text-neutral-200 max-w-xl sm:max-w-2xl font-normal leading-relaxed px-2 text-center drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]"
+            className="mt-4 sm:mt-6 text-xs sm:text-base md:text-lg text-neutral-200 max-w-xl sm:max-w-2xl font-normal leading-relaxed px-2 text-center drop-shadow-[0_2px_12px_rgba(0,0,0,0.95)]"
           >
             Uncompromising drop-shoulder silhouettes engineered with pre-shrunk combed cotton and anti-bacon collars that never lose structure.
           </motion.p>

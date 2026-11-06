@@ -2242,7 +2242,7 @@ export const AdminView: React.FC = () => {
                       },
                       {
                         title: 'Wolf Emblem Drop 04',
-                        url: 'https://i.ibb.co/ksz6KPN4/1790772061924.png',
+                        url: '/hero-bg.jpg',
                         opacity: 50
                       },
                       {
