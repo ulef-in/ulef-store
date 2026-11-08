@@ -15,6 +15,7 @@ import { SizeGuideModal } from './components/SizeGuideModal';
 import { CustomerSupportChat } from './components/CustomerSupportChat';
 import { LegalModal } from './components/LegalModal';
 import { Toast } from './components/Toast';
+import { Analytics } from '@vercel/analytics/react';
 
 // Views
 import { HomeView } from './views/HomeView';
@@ -104,6 +105,9 @@ const AppContent: React.FC = () => {
       <CustomerSupportChat />
       <LegalModal />
       <Toast />
+
+      {/* Vercel Web Analytics */}
+      <Analytics />
     </div>
   );
 };
